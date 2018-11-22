@@ -2,18 +2,18 @@
   "name": "snipe/snipe-it",
   "description": "Open source asset management system built on Laravel.",
   "keywords": ["assets", "asset-management", "laravel"],
-  "license": "AGPL-3",
+  "license": "AGPL-3.0-or-later",
   "type": "project",
     "require": {
     "php": ">=5.6.4",
     "barryvdh/laravel-debugbar": "^2.4",
     "doctrine/cache": "^1.6",
     "doctrine/common": "^2.7",
-    "doctrine/dbal": "v2.5.13",
+    "doctrine/dbal": "^2.5.13",
     "doctrine/inflector": "1.1.*",
     "doctrine/instantiator": "1.0.*",
     "erusev/parsedown": "^1.6",
-    "fideloper/proxy": "^3.1",
+    "fideloper/proxy": "^3.3",
     "intervention/image": "^2.3",
     "javiereguiluz/easyslugger": "^1.0",
     "laravel/framework": "5.4.35",
@@ -28,7 +28,7 @@
     "phpspec/prophecy": "1.6.2",
     "pragmarx/google2fa": "^1.0",
     "predis/predis": "^1.1",
-    "rollbar/rollbar-laravel": "^2.2",
+    "rollbar/rollbar-laravel": "2.4.1",
     "schuppo/password-strength": "~1.5",
     "spatie/laravel-backup": "3.11.0",
     "tecnickcom/tc-lib-barcode": "^1.15",
@@ -38,11 +38,9 @@
   },
     "require-dev": {
     "codeception/codeception": "2.3.6",
-    "codeclimate/php-test-reporter": "^0.4.4",
     "fzaninotto/faker": "~1.4",
     "phpunit/php-token-stream": "1.4.11",
     "phpunit/phpunit": "~5.7",
-    "roave/security-advisories": "dev-master",
     "squizlabs/php_codesniffer": "*",
     "symfony/css-selector": "3.1.*",
     "symfony/dom-crawler": "3.1.*"
@@ -73,6 +71,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "optimize-autoloader": true,
+        "process-timeout":3000,
         "platform": {
           "php": "5.6.4"
         }

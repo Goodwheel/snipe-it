@@ -334,6 +334,7 @@ class SettingsController extends Controller
 
         $setting->full_multiple_companies_support = $request->input('full_multiple_companies_support', '0');
         $setting->load_remote = $request->input('load_remote', '0');
+        $setting->unique_serial = $request->input('unique_serial', '0');
         $setting->show_images_in_email = $request->input('show_images_in_email', '0');
         $setting->show_archived_in_list = $request->input('show_archived_in_list', '0');
         $setting->dashboard_message = $request->input('dashboard_message');
@@ -396,9 +397,12 @@ class SettingsController extends Controller
         $setting->brand = $request->input('brand', '1');
         $setting->header_color = $request->input('header_color');
         $setting->support_footer = $request->input('support_footer');
+        $setting->version_footer = $request->input('version_footer');
         $setting->footer_text = $request->input('footer_text');
         $setting->skin = $request->input('skin');
         $setting->show_url_in_emails = $request->input('show_url_in_emails', '0');
+        $setting->logo_print_assets = $request->input('logo_print_assets', '0');
+
 
 
         // Only allow the site name and CSS to be changed if lock_passwords is false
@@ -535,7 +539,9 @@ class SettingsController extends Controller
             return redirect()->to('admin')->with('error', trans('admin/settings/message.update.error'));
         }
 
-        $setting->locale = $request->input('locale', 'en');
+        if (!config('app.lock_passwords')) {
+            $setting->locale = $request->input('locale', 'en');
+        }
         $setting->default_currency = $request->input('default_currency', '$');
         $setting->date_display_format = $request->input('date_display_format');
         $setting->time_display_format = $request->input('time_display_format');
@@ -789,22 +795,34 @@ class SettingsController extends Controller
 
 
 
-        if (Input::has('labels_display_name')) {
+        if ($request->has('labels_display_name')) {
             $setting->labels_display_name = 1;
         } else {
             $setting->labels_display_name = 0;
         }
 
-        if (Input::has('labels_display_serial')) {
+        if ($request->has('labels_display_serial')) {
             $setting->labels_display_serial = 1;
         } else {
             $setting->labels_display_serial = 0;
         }
 
-        if (Input::has('labels_display_tag')) {
+        if ($request->has('labels_display_tag')) {
             $setting->labels_display_tag = 1;
         } else {
             $setting->labels_display_tag = 0;
+	    }
+
+	    if ($request->has('labels_display_tag')) {
+             $setting->labels_display_tag = 1;
+         } else {
+             $setting->labels_display_tag = 0;
+         }
+
+        if ($request->has('labels_display_model')) {
+            $setting->labels_display_model = 1;
+        } else {
+            $setting->labels_display_model = 0;
         }
 
         if ($setting->save()) {

@@ -105,7 +105,7 @@ class UsersController extends Controller
                         'assets','accessories', 'consumables','licenses','groups','activated','created_at',
                         'two_factor_enrolled','two_factor_optin','last_login', 'assets_count', 'licenses_count',
                         'consumables_count', 'accessories_count', 'phone', 'address', 'city', 'state',
-                        'country', 'zip'
+                        'country', 'zip', 'id'
                     ];
 
                 $sort = in_array($request->get('sort'), $allowed_columns) ? $request->get('sort') : 'first_name';
@@ -142,7 +142,7 @@ class UsersController extends Controller
                 'users.avatar',
                 'users.email',
             ]
-            );
+            )->where('show_in_list', '=', '1');
 
         $users = Company::scopeCompanyables($users);
 
@@ -191,7 +191,8 @@ class UsersController extends Controller
      */
     public function store(SaveUserRequest $request)
     {
-        $this->authorize('view', User::class);
+        $this->authorize('create', User::class);
+
         $user = new User;
         $user->fill($request->all());
 
@@ -199,6 +200,12 @@ class UsersController extends Controller
         $user->password = bcrypt($request->get('password', $tmp_pass));
 
         if ($user->save()) {
+            if ($request->has('groups')) {
+                $user->groups()->sync($request->input('groups'));
+            } else {
+                $user->groups()->sync(array());
+            }
+            
             return response()->json(Helper::formatStandardApiResponse('success', (new UsersTransformer)->transformUser($user), trans('admin/users/message.success.create')));
         }
         return response()->json(Helper::formatStandardApiResponse('error', null, $user->getErrors()));
@@ -230,7 +237,8 @@ class UsersController extends Controller
      */
     public function update(SaveUserRequest $request, $id)
     {
-        $this->authorize('edit', User::class);
+        $this->authorize('update', User::class);
+
         $user = User::findOrFail($id);
         $user->fill($request->all());
 
@@ -289,7 +297,8 @@ class UsersController extends Controller
     public function assets($id)
     {
         $this->authorize('view', User::class);
-        $assets = Asset::where('assigned_to', '=', $id)->with('model')->get();
+        $this->authorize('view', Asset::class);
+        $assets = Asset::where('assigned_to', '=', $id)->where('assigned_type', '=', User::class)->with('model')->get();
         return (new AssetsTransformer)->transformAssets($assets, $assets->count());
     }
 
@@ -304,7 +313,7 @@ class UsersController extends Controller
     public function postTwoFactorReset(Request $request)
     {
 
-        $this->authorize('edit', User::class);
+        $this->authorize('update', User::class);
 
         if ($request->has('id')) {
             try {
@@ -319,5 +328,18 @@ class UsersController extends Controller
         }
         return response()->json(['message' => 'No ID provided'], 500);
 
+    }
+
+    /**
+     * Get info on the current user.
+     *
+     * @author [Juan Font] [<juanfontalonso@gmail.com>]
+     * @since [v4.4.2]
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getCurrentUserInfo(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

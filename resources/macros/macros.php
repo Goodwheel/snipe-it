@@ -32,6 +32,7 @@ Form::macro('locales', function ($name = "locale", $selected = null, $class = nu
       'el'=> "Greek",
       'he'=> "Hebrew",
       'hu'=> "Hungarian",
+      'is' => 'Icelandic',
       'id'=> "Indonesian",
       'ga-IE'=> "Irish",
       'it'=> "Italian",
@@ -50,6 +51,7 @@ Form::macro('locales', function ($name = "locale", $selected = null, $class = nu
       'pt-BR'=> "Portuguese, Brazilian",
       'ro'=> "Romanian",
       'ru'=> "Russian",
+      'sr-CS' => 'Serbian (Latin)',
       'sl'=> "Slovenian",
       'es-ES'=> "Spanish",
       'es-CO'=> "Spanish, Colombia",
@@ -366,12 +368,14 @@ Form::macro('date_display_format', function ($name = "date_display_format", $sel
         'd M, Y',
         'm/d/Y',
         'n/d/y',
+        'd/m/Y',
         'm/j/Y',
         'd.m.Y',
     ];
 
     foreach ($formats as $format) {
-        $date_display_formats[$format] = Carbon::now()->format($format);
+
+        $date_display_formats[$format] = Carbon::parse(date('Y').'-'.date('m').'-25')->format($format);
     }
     $select = '<select name="'.$name.'" class="'.$class.'" style="min-width:250px">';
     foreach ($date_display_formats as $format => $date_display_format) {
@@ -502,6 +506,7 @@ Form::macro('customfield_elements', function ($name = "customfield_elements", $s
     $formats = array(
         'text' => 'Text Box',
         'listbox' => 'List Box',
+        'textarea' => 'Textarea (multi-line) ',
      //   'checkbox' => 'Checkbox',
      //   'radio' => 'Radio Buttons',
     );

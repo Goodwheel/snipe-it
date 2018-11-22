@@ -83,7 +83,7 @@ class ManufacturersController extends Controller
     public function show($id)
     {
         $this->authorize('view', Manufacturer::class);
-        $manufacturer = Manufacturer::findOrFail($id);
+        $manufacturer = Manufacturer::withCount('assets')->withCount('licenses')->withCount('consumables')->withCount('accessories')->findOrFail($id);
         return (new ManufacturersTransformer)->transformManufacturer($manufacturer);
     }
 
@@ -99,7 +99,7 @@ class ManufacturersController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Manufacturer::class);
+        $this->authorize('update', Manufacturer::class);
         $manufacturer = Manufacturer::findOrFail($id);
         $manufacturer->fill($request->all());
 

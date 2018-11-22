@@ -6,29 +6,50 @@ tr {
 
 <template>
     <tr v-show="processDetail">
-        <td colspan="3">
+        <td colspan="5">
+            <div class="col-md-2 text-left">
+            </div>
+            <div class="col-md-8 col-md-offset-2 text-center" style="padding-top: 30px; margin: 0 auto;">
+            <div class="col-md-12 text-left">
+
             <h4 class="modal-title">Import File:</h4>
             <div class="dynamic-form-row">
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-5 col-xs-12">
                     <label for="import-type">Import Type:</label>
                 </div>
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-7 col-xs-12">
                     <select2 :options="options.importTypes" v-model="options.importType" required>
                         <option disabled value="0"></option>
                     </select2>
                 </div>
             </div>
             <div class="dynamic-form-row">
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-5 col-xs-12">
                     <label for="import-update">Update Existing Values?:</label>
                 </div>
-                <div class="col-md-4 col-xs-12">
+                <div class="col-md-7 col-xs-12">
                     <input type="checkbox" name="import-update" v-model="options.update">
                 </div>
             </div>
+            <div class="dynamic-form-row">
+                <div class="col-md-5 col-xs-12">
+                    <label for="send-welcome">Send Welcome Email for new Users?</label>
+                </div>
+                <div class="col-md-7 col-xs-12">
+                    <input type="checkbox" name="send-welcome" v-model="options.send_welcome">
+                </div>
+                </div>
+            </div>
+            <div class="alert col-md-12"
+                 :class="alertClass"
+                 style="text-align:left"
+                 v-if="statusText">
+                {{ this.statusText }}
+            </div>
 
-            <div class="col-md-12" style="padding-top: 30px;">
-            <table class="table">
+
+            <div class="text-left" style="padding-top: 30px;">
+            <table class="table table-striped snipe-table">
             <thead>
                 <th>Header Field</th>
                 <th>Import Field</th>
@@ -54,21 +75,25 @@ tr {
                 </template>
             </tbody>
             </table>
+                <br>
+                 <div class="col-md-8 col-md-offset-2 text-right">
+                     <button type="button" class="btn btn-sm btn-default" @click="processDetail = false">Cancel</button>
+                     <button type="submit" class="btn btn-sm btn-primary" @click="postSave">Import</button>
+                     <br><br>
+                 </div>
+
+                <div class="alert col-md-12" style="padding-top: 20px;"
+                     :class="alertClass"
+                     style="text-align:left"
+                     v-if="statusText">
+                    {{ this.statusText }}
+                </div>
+
+             </div>
             </div>
+
         </td>
 
-        <td>
-            <button type="button" class="btn btn-sm btn-default" @click="processDetail = false">Cancel</button>
-            <button type="submit" class="btn btn-sm btn-primary" @click="postSave">Import</button>
-            <div 
-                class="alert col-md-5 col-md-offset-1"
-                :class="alertClass"
-                style="text-align:left"
-                v-if="statusText"
-            >
-                {{ this.statusText }}
-            </div>
-        </td>
     </tr>
 </template>
 
@@ -117,11 +142,17 @@ tr {
                     assets: [
                         {id: 'asset_tag', text: 'Asset Tag' },
                         {id: 'asset_model', text: 'Model Name' },
+                        {id: 'checkout_class', text: 'Checkout Type' },
+                        {id: 'checkout_location', text: 'Checkout Location' },
                         {id: 'image', text: 'Image Filename' },
                         {id: 'model_number', text: 'Model Number' },
                         {id: 'full_name', text: 'Full Name' },
                         {id: 'status', text: 'Status' },
                         {id: 'warranty_months', text: 'Warranty Months' },
+                    ],
+                    consumables: [
+                        {id: 'item_no', text: "Item Number"},
+                        {id: 'model_number', text: "Model Number"},
                     ],
                     licenses: [
                         {id: 'expiration_date', text: 'Expiration Date' },
@@ -137,6 +168,10 @@ tr {
                         {id: 'jobtitle', text: 'Job Title' },
                         {id: 'last_name', text: 'Last Name' },
                         {id: 'phone_number', text: 'Phone Number' },
+                        {id: 'manager_first_name', text: 'Manager First Name' },
+                        {id: 'manager_last_name', text: 'Manager Last Name' },
+                        {id: 'department', text: 'Department' },
+                        {id: 'activated', text: 'Activated' },
 
                     ],
                     customFields: this.customFields,
@@ -165,6 +200,11 @@ tr {
                                 .concat(this.columnOptions.assets)
                                 .concat(this.columnOptions.customFields)
                                 .sort(sorter);
+
+                    case 'consumable':
+                        return this.columnOptions.general
+                        .concat(this.columnOptions.consumables)
+                        .sort(sorter);
                     case 'license':
                         return this.columnOptions.general.concat(this.columnOptions.licenses).sort(sorter);
                     case 'user':
@@ -184,7 +224,6 @@ tr {
         },
         watch: {
             columns() {
-                console.log("CHANGED");
                 this.populateSelect2ActiveItems();
             }
         },
@@ -201,6 +240,7 @@ tr {
                 this.statusText = "Processing...";
                 this.$http.post(route('api.imports.importFile', this.file.id), {
                     'import-update': this.options.update,
+                    'send-welcome': this.options.send_welcome,
                     'import-type': this.options.importType,
                     'column-mappings': this.columnMappings
                 }).then( ({body}) => {
@@ -234,7 +274,6 @@ tr {
                     for(var j=0; j < this.columns.length; j++) {
                         let column = this.columns[j];
                         let lower = this.file.header_row.map((value) => value.toLowerCase());
-                        console.dir(lower);
                         let index = lower.indexOf(column.text.toLowerCase())
                         if(index != -1) {
                             this.$set(this.columnMappings, this.file.header_row[index], column.id)
@@ -248,7 +287,6 @@ tr {
                 }
             },
             updateModel(header, value) {
-                console.log(header, value);
                 this.columnMappings[header] = value;
             }
         },
