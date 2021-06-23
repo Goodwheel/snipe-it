@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
@@ -21,22 +22,16 @@ class Component extends SnipeModel
     protected $table = 'components';
 
     /**
-     * Set static properties to determine which checkout/checkin handlers we should use
-     */
-    public static $checkoutClass = null;
-    public static $checkinClass = null;
-
-    
-    /**
     * Category validation rules
     */
     public $rules = array(
-        'name'        => 'required|min:3|max:255',
-        'qty'     => 'required|integer|min:1',
-        'category_id' => 'required|integer',
-        'company_id'  => 'integer|nullable',
+        'name'           => 'required|min:3|max:255',
+        'qty'            => 'required|integer|min:1',
+        'category_id'    => 'required|integer|exists:categories,id',
+        'company_id'     => 'integer|nullable',
+        'min_amt'        => 'integer|min:0|nullable',
         'purchase_date'  => 'date|nullable',
-        'purchase_cost'   => 'numeric|nullable',
+        'purchase_cost'  => 'numeric|nullable',
     );
 
     /**
@@ -67,104 +62,136 @@ class Component extends SnipeModel
         'serial',
     ];
 
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'order_number', 'serial', 'purchase_cost', 'purchase_date'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+        'category'     => ['name'],
+        'company'      => ['name'],
+        'location'     => ['name'],
+    ];
+
+    /**
+     * Establishes the component -> location relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function location()
     {
         return $this->belongsTo('\App\Models\Location', 'location_id');
     }
 
+    /**
+     * Establishes the component -> assets relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function assets()
     {
         return $this->belongsToMany('\App\Models\Asset', 'components_assets')->withPivot('id', 'assigned_qty', 'created_at', 'user_id');
     }
 
+    /**
+     * Establishes the component -> admin user relationship
+     *
+     * @todo this is probably not needed - refactor
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function admin()
     {
         return $this->belongsTo('\App\Models\User', 'user_id');
     }
 
+    /**
+     * Establishes the component -> company relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function company()
     {
         return $this->belongsTo('\App\Models\Company', 'company_id');
     }
 
-
+    /**
+     * Establishes the component -> category relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function category()
     {
         return $this->belongsTo('\App\Models\Category', 'category_id');
     }
 
     /**
-    * Get action logs for this consumable
-    */
+     * Establishes the component -> action logs relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function assetlog()
     {
         return $this->hasMany('\App\Models\Actionlog', 'item_id')->where('item_type', Component::class)->orderBy('created_at', 'desc')->withTrashed();
     }
 
-
-    public function numRemaining()
+    /**
+     * Check how many items within a component are checked out
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v5.0]
+     * @return int
+     */
+    public function numCheckedOut()
     {
         $checkedout = 0;
-
         foreach ($this->assets as $checkout) {
             $checkedout += $checkout->pivot->assigned_qty;
         }
 
-
-        $total = $this->qty;
-        $remaining = $total - $checkedout;
-        return $remaining;
+        return $checkedout;
     }
 
-
     /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
+     * Check how many items within a component are remaining
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v3.0]
+     * @return int
+     */
+    public function numRemaining()
     {
-        $search = explode(' ', $search);
-
-        return $query->where(function ($query) use ($search) {
-
-            foreach ($search as $search) {
-                    $query->whereHas('category', function ($query) use ($search) {
-                        $query->where('categories.name', 'LIKE', '%'.$search.'%');
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('company', function ($query) use ($search) {
-                            $query->where('companies.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere(function ($query) use ($search) {
-                        $query->whereHas('location', function ($query) use ($search) {
-                            $query->where('locations.name', 'LIKE', '%'.$search.'%');
-                        });
-                    })->orWhere('components.name', 'LIKE', '%'.$search.'%')
-                            ->orWhere('components.order_number', 'LIKE', '%'.$search.'%')
-                            ->orWhere('components.serial', 'LIKE', '%'.$search.'%')
-                            ->orWhere('components.purchase_cost', 'LIKE', '%'.$search.'%');
-            }
-        });
+        return $this->qty - $this->numCheckedOut();
     }
 
     /**
     * Query builder scope to order on company
     *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $order       Order
+    * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+    * @param  string                              $order       Order
     *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
+    * @return \Illuminate\Database\Query\Builder          Modified query builder
     */
     public function scopeOrderCategory($query, $order)
     {
@@ -174,10 +201,10 @@ class Component extends SnipeModel
     /**
     * Query builder scope to order on company
     *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $order       Order
+    * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+    * @param  string                              $order       Order
     *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
+    * @return \Illuminate\Database\Query\Builder          Modified query builder
     */
     public function scopeOrderLocation($query, $order)
     {
@@ -188,10 +215,10 @@ class Component extends SnipeModel
     /**
     * Query builder scope to order on company
     *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $order       Order
+    * @param  \Illuminate\Database\Query\Builder  $query  Query builder instance
+    * @param  string                              $order       Order
     *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
+    * @return \Illuminate\Database\Query\Builder          Modified query builder
     */
     public function scopeOrderCompany($query, $order)
     {

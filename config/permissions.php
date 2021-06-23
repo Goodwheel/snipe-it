@@ -27,6 +27,15 @@ return array(
         )
     ),
 
+    'CSV Import' => array(
+        array(
+            'permission' => 'import',
+            'label'      => '',
+            'note'       => 'This will allow users to import even if access to users, assets, etc is denied elsewhere.',
+            'display'    => true,
+        )
+    ),
+
     'Reports' => array(
         array(
             'permission' => 'reports.view',
@@ -209,6 +218,12 @@ return array(
             'note'       => '',
             'display'    => true,
         ),
+        array(
+            'permission' => 'licenses.files',
+            'label'      => 'View and Modify License Files',
+            'note'       => '',
+            'display'    => true,
+        ),
     ),
 
 
@@ -251,6 +266,41 @@ return array(
         ),
 
     ),
+
+    'Kits' => array(
+        array(
+            'permission' => 'kits.view',
+            'label'      => 'View ',
+            'note'       => 'These are predefined kits that can be used to quickly checkout assets, licenses, etc.',
+            'display'    => true,
+        ),
+        array(
+            'permission' => 'kits.create',
+            'label'      => 'Create ',
+            'note'       => '',
+            'display'    => true,
+        ),
+        array(
+            'permission' => 'kits.edit',
+            'label'      => 'Edit  ',
+            'note'       => '',
+            'display'    => true,
+        ),
+        array(
+            'permission' => 'kits.delete',
+            'label'      => 'Delete ',
+            'note'       => '',
+            'display'    => true,
+        ),
+
+        array(
+            'permission' => 'kits.checkout',
+            'label'      => 'Checkout ',
+            'note'       => '',
+            'display'    => true,
+        ),
+    ),
+
 
     'Users' => array(
         array(
@@ -415,9 +465,7 @@ return array(
             'note'       => '',
             'display'    => true,
         ),
-    ),
-
-
+    ), 
 
     'Suppliers' => array(
         array(
@@ -570,6 +618,20 @@ return array(
             'permission' => 'self.api',
             'label'      => 'Create API Keys',
             'note'       => 'The user create personal API keys to utilize the REST API.',
+            'display'    => true,
+        ),
+
+        array(
+            'permission' => 'self.edit_location',
+            'label'      => 'Profile Edit Location',
+            'note'       => 'The user may update their own location in their profile. Note that this is not affected by any additional Users permissions you grant to this user or group.',
+            'display'    => true,
+        ),
+
+        array(
+            'permission' => 'self.checkout_assets',
+            'label'      => 'Self-Checkout',
+            'note'       => 'This user may check out assets that are marked for self-checkout.',
             'display'    => true,
         ),
 

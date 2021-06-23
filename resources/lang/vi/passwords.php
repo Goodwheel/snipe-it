@@ -2,6 +2,6 @@
 
 return [
     'sent'	        => 'Mật khẩu của bạn đã được gửi đi!',
-    'user'			=> 'Người dùng này không tồn tại hoặc email này chưa được đăng ký',
+    'user'			=> 'Không tìn thấy người dùng được kích hoạt với email này.',
 ];
 

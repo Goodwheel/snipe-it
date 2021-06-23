@@ -14,9 +14,24 @@ use Illuminate\Http\Request;
 */
 
 
-Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
+Route::group(['prefix' => 'v1','namespace' => 'Api', 'middleware' => 'auth:api'], function () {
+
+
+    Route::get('/', function() {
+
+        return response()->json(
+            [
+                'status' => 'error',
+                'message' => '404 endpoint not found. This is the base URL for the API and does not return anything itself. Please check the API reference at https://snipe-it.readme.io/reference to find a valid API endpoint.',
+                'payload' => null,
+            ], 404);
+    });
+
+
+
 
     Route::group(['prefix' => 'account'], function () {
+
         Route::get('requestable/hardware',
             [
                 'as' => 'api.assets.requestable',
@@ -33,7 +48,25 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
     });
 
-    /*--- Accessories API ---*/
+    /*--- Accessories API ---*/    
+    Route::group(['prefix' => 'accessories'], function () {
+
+        Route::get('{accessory}/checkedout',
+            [
+                'as' => 'api.accessories.checkedout',
+                'uses' => 'AccessoriesController@checkedout'
+            ]
+        );
+
+        Route::get('selectlist',
+            [
+                'as' => 'api.accessories.selectlist',
+                'uses'=> 'AccessoriesController@selectlist'
+            ]
+        );
+    });
+
+    // Accessories group
     Route::resource('accessories', 'AccessoriesController',
         ['names' =>
             [
@@ -46,7 +79,9 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             'except' => ['create', 'edit'],
             'parameters' => ['accessory' => 'accessory_id']
         ]
-    ); // Accessories resource
+    );
+
+    // Accessories resource
 
     Route::group(['prefix' => 'accessories'], function () {
 
@@ -56,6 +91,21 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
                 'uses' => 'AccessoriesController@checkedout'
             ]
         );
+
+        Route::post('{accessory}/checkout',
+            [
+                'as' => 'api.accessories.checkout',
+                'uses' => 'AccessoriesController@checkout'
+            ]
+        );
+
+        Route::post('{accessory}/checkin',
+            [
+                'as' => 'api.accessories.checkin',
+                'uses' => 'AccessoriesController@checkin'
+            ]
+        );
+
     }); // Accessories group
 
 
@@ -70,9 +120,9 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             ]
         );
 
-    }); // Categories group
+    });
 
-
+    // Categories group
     Route::resource('categories', 'CategoriesController',
         [
             'names' =>
@@ -97,6 +147,7 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
     ]);
 
 
+    // Companies resource
     Route::resource('companies', 'CompaniesController',
         [
             'names' =>
@@ -115,7 +166,6 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
     /*--- Departments API ---*/
 
-    /*--- Suppliers API ---*/
     Route::group(['prefix' => 'departments'], function () {
 
 
@@ -174,6 +224,12 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
 
     /*--- Consumables API ---*/
+    Route::get('consumables/selectlist',
+        [
+            'as' => 'api.consumables.selectlist',
+            'uses'=> 'ConsumablesController@selectlist'
+        ]
+    );
 
     Route::resource('consumables', 'ConsumablesController',
         [
@@ -189,12 +245,22 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             'parameters' => ['consumable' => 'consumable_id']
         ]
     ); // Consumables resource
-    Route::get('consumables/view/{id}/users',
-        [
-            'as' => 'api.consumables.showUsers',
-            'uses' => 'ConsumablesController@getDataView'
-        ]
-    );
+
+    Route::group(['prefix' => 'consumables'], function () {
+        Route::get('view/{id}/users',
+            [
+                'as' => 'api.consumables.showUsers',
+                'uses' => 'ConsumablesController@getDataView'
+            ]
+        );
+
+        Route::post('{consumable}/checkout',
+            [
+                'as' => 'api.consumables.checkout',
+                'uses' => 'ConsumablesController@checkout'
+            ]
+        );
+    });
 
     /*--- Depreciations API ---*/
 
@@ -304,21 +370,41 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
     /*--- Hardware API ---*/
 
     Route::group(['prefix' => 'hardware'], function () {
-
+    
+        Route::get('{asset_id}/licenses',  [
+            'as' => 'api.assets.licenselist',
+            'uses' => 'AssetsController@licenses'
+        ]);
+        
         Route::get( 'bytag/{tag}',  [
             'as' => 'assets.show.bytag',
             'uses' => 'AssetsController@showByTag'
         ]);
 
-        Route::get( 'byserial/{serial}',  [
-            'as' => 'assets.show.byserial',
-            'uses' => 'AssetsController@showBySerial'
-        ]);
+        Route::get('bytag/{any}',
+            [
+                'as' => 'api.assets.show.bytag',
+                'uses' => 'AssetsController@showByTag'
+            ]
+        )->where('any', '.*');
 
+
+        Route::get('byserial/{any}',
+            [
+                'as' => 'api.assets.show.byserial',
+                'uses' => 'AssetsController@showBySerial'
+            ]
+         )->where('any', '.*');
+        
 
         Route::get( 'selectlist',  [
             'as' => 'assets.selectlist',
             'uses' => 'AssetsController@selectlist'
+        ]);
+
+        Route::get('audit/{audit}', [
+            'as' => 'api.asset.to-audit',
+            'uses' => 'AssetsController@index'
         ]);
 
 
@@ -326,7 +412,6 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             'as' => 'api.asset.audit',
             'uses' => 'AssetsController@audit'
         ]);
-
 
         Route::post('{asset_id}/checkout',
             [
@@ -410,10 +495,13 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
     /*--- Licenses API ---*/
 
     Route::group(['prefix' => 'licenses'], function () {
-        Route::get('{licenseId}/seats', [
-            'as' => 'api.license.seats',
-            'uses' => 'LicensesController@seats'
-        ]);
+        Route::get('selectlist',
+            [
+                'as' => 'api.licenses.selectlist',
+                'uses'=> 'LicensesController@selectlist'
+            ]
+        );
+
     }); // Licenses group
 
     Route::resource('licenses', 'LicensesController',
@@ -431,7 +519,18 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
         ]
     ); // Licenses resource
 
-
+    Route::resource('licenses.seats', 'LicenseSeatsController',
+        [
+            'names' =>
+                [
+                    'index' => 'api.licenses.seats.index',
+                    'show' => 'api.licenses.seats.show',
+                    'update' => 'api.licenses.seats.update'
+                ],
+            'except' => ['create', 'edit', 'destroy', 'store'],
+            'parameters' => ['licenseseat' => 'licenseseat_id']
+        ]
+    ); // Licenseseats resource
 
     /*--- Locations API ---*/
 
@@ -552,8 +651,20 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
     /*--- Settings API ---*/
     Route::get('settings/ldaptest', [
         'as' => 'api.settings.ldaptest',
-        'uses' => 'SettingsController@ldaptest'
+        'uses' => 'SettingsController@ldapAdSettingsTest'
     ]);
+
+    Route::post('settings/purge_barcodes', [
+        'as' => 'api.settings.purgebarcodes',
+        'uses' => 'SettingsController@purgeBarcodes'
+    ]);
+
+    Route::get('settings/login-attempts', [
+        'middleware' => ['auth', 'authorize:superuser'],
+        'as' => 'api.settings.login_attempts',
+        'uses' => 'SettingsController@showLoginAttempts'
+    ]);
+
 
     Route::post('settings/ldaptestlogin', [
         'as' => 'api.settings.ldaptestlogin',
@@ -569,8 +680,8 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
         'settings/mailtest',
         [
             'as'  => 'api.settings.mailtest',
-            'uses' => 'SettingsController@ajaxTestEmail' ]
-    );
+            'uses' => 'SettingsController@ajaxTestEmail'
+    ]);
 
 
     Route::resource('settings', 'SettingsController',
@@ -674,8 +785,8 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
 
 
 
-    /*--- Users API ---*/
 
+    /*--- Users API ---*/
 
 
     Route::group([ 'prefix' => 'users' ], function () {
@@ -684,6 +795,13 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             [
                 'as' => 'api.users.two_factor_reset',
                 'uses' => 'UsersController@postTwoFactorReset'
+            ]
+        );
+
+        Route::get('me',
+            [
+                'as' => 'api.users.me',
+                'uses' => 'UsersController@getCurrentUserInfo'
             ]
         );
 
@@ -705,6 +823,22 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
             [
                 'as' => 'api.users.assetlist',
                 'uses' => 'UsersController@assets'
+            ]
+        );
+
+
+        Route::get('{user}/accessories',
+            [
+                'as' => 'api.users.accessorieslist',
+                'uses' => 'UsersController@accessories'
+            ]
+        );
+
+
+        Route::get('{user}/licenses',
+            [
+                'as' => 'api.users.licenselist',
+                'uses' => 'UsersController@licenses'
             ]
         );
 
@@ -737,6 +871,153 @@ Route::group(['prefix' => 'v1','namespace' => 'Api'], function () {
         [ 'as' => 'api.activity.index', 'uses' => 'ReportsController@index' ]
     );
 
+    /*--- Kits API ---*/
 
+    Route::resource('kits', 'PredefinedKitsController',
+        [
+            'names' =>
+                [
+                    'index' => 'api.kits.index',
+                    'show' => 'api.kits.show',
+                    'store' => 'api.kits.store',
+                    'update' => 'api.kits.update',
+                    'destroy' => 'api.kits.destroy',
+                ],
+            'except' => ['create', 'edit'],
+            'parameters' => ['kit' => 'kit_id']
+        ]
+    );
+
+
+    Route::group([ 'prefix' => 'kits/{kit_id}' ], function () {
+
+        // kit licenses
+        Route::get('licenses', 
+            [
+                'as' => 'api.kits.licenses.index',
+                'uses' => 'PredefinedKitsController@indexLicenses',
+            ]
+        );
+        
+        Route::post('licenses', 
+            [
+                'as' => 'api.kits.licenses.store',
+                'uses' => 'PredefinedKitsController@storeLicense',
+            ]
+        );
+        
+        Route::put('licenses/{license_id}', 
+            [
+                'as' => 'api.kits.licenses.update',
+                'uses' => 'PredefinedKitsController@updateLicense',
+            ]
+        );
+
+        Route::delete('licenses/{license_id}', 
+            [
+                'as' => 'api.kits.licenses.destroy',
+                'uses' => 'PredefinedKitsController@detachLicense',
+            ]
+        );
+        
+        // kit models
+        Route::get('models', 
+            [
+                'as' => 'api.kits.models.index',
+                'uses' => 'PredefinedKitsController@indexModels',
+            ]
+        );
+        
+        Route::post('models', 
+            [
+                'as' => 'api.kits.models.store',
+                'uses' => 'PredefinedKitsController@storeModel',
+            ]
+        );
+        
+        Route::put('models/{model_id}', 
+            [
+                'as' => 'api.kits.models.update',
+                'uses' => 'PredefinedKitsController@updateModel',
+            ]
+        );
+
+        Route::delete('models/{model_id}', 
+            [
+                'as' => 'api.kits.models.destroy',
+                'uses' => 'PredefinedKitsController@detachModel',
+            ]
+        );
+
+        // kit accessories
+        Route::get('accessories', 
+            [
+                'as' => 'api.kits.accessories.index',
+                'uses' => 'PredefinedKitsController@indexAccessories',
+            ]
+        );
+        
+        Route::post('accessories', 
+            [
+                'as' => 'api.kits.accessories.store',
+                'uses' => 'PredefinedKitsController@storeAccessory',
+            ]
+        );
+        
+        Route::put('accessories/{accessory_id}', 
+            [
+                'as' => 'api.kits.accessories.update',
+                'uses' => 'PredefinedKitsController@updateAccessory',
+            ]
+        );
+
+        Route::delete('accessories/{accessory_id}', 
+            [
+                'as' => 'api.kits.accessories.destroy',
+                'uses' => 'PredefinedKitsController@detachAccessory',
+            ]
+        );
+
+        // kit consumables
+        Route::get('consumables', 
+            [
+                'as' => 'api.kits.consumables.index',
+                'uses' => 'PredefinedKitsController@indexConsumables',
+            ]
+        );
+        
+        Route::post('consumables', 
+            [
+                'as' => 'api.kits.consumables.store',
+                'uses' => 'PredefinedKitsController@storeConsumable',
+            ]
+        );
+        
+        Route::put('consumables/{consumable_id}', 
+            [
+                'as' => 'api.kits.consumables.update',
+                'uses' => 'PredefinedKitsController@updateConsumable',
+            ]
+        );
+
+        Route::delete('consumables/{consumable_id}', 
+            [
+                'as' => 'api.kits.consumables.destroy',
+                'uses' => 'PredefinedKitsController@detachConsumable',
+            ]
+        );
+
+    }); // kits group
+
+    Route::fallback(function(){
+        return response()->json(
+            [
+                'status' => 'error',
+                'message' => '404 endpoint not found. Please check the API reference at https://snipe-it.readme.io/reference to find a valid API endpoint.',
+                'payload' => null,
+            ], 404);
+    });
 
 });
+
+

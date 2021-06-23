@@ -1,21 +1,21 @@
 <?php
 namespace App\Http\Transformers;
 
-use App\Models\Statuslabel;
-use Illuminate\Database\Eloquent\Collection;
-use Gate;
 use App\Helpers\Helper;
+use App\Models\Statuslabel;
+use Gate;
+use Illuminate\Database\Eloquent\Collection;
 
 class StatuslabelsTransformer
 {
 
-    public function transformStatuslabels (Collection $statuslabels)
+    public function transformStatuslabels (Collection $statuslabels, $total)
     {
         $array = array();
         foreach ($statuslabels as $statuslabel) {
             $array[] = self::transformStatuslabel($statuslabel);
         }
-        return (new DatatablesTransformer)->transformDatatables($array);
+        return (new DatatablesTransformer)->transformDatatables($array, $total);
     }
 
     public function transformStatuslabel (Statuslabel $statuslabel)

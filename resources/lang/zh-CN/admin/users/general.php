@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => '该用户可以登录',
+    'activated_disabled_help_text' => '您无法编辑自己帐户的激活状态。',
     'assets_user'       => '分配给:name的资产',
     'bulk_update_warn'	=> '您即将编辑user_count用户的属性。请注意，您不能使用此表单更改您自己的用户属性，必须单独对您自己的用户信息进行编辑。',
     'bulk_update_help'	=> '此表单允许您一次更新多个用户。仅填写您需要更改的字段。留的空的任何字段将保持不变。',
@@ -18,6 +19,7 @@ return array(
     'ldap_config_text'  => 'LDAP配置在 管理 > 设置。所选位置将为导入的用户所用',
     'print_assigned'    => '打印所有已分配资产',
     'software_user'     => ':name 借走的软件',
+    'send_email_help'   => '您必须为此用户提供电子邮件地址才能发送他们的凭据。电子邮件凭据只能在用户创建时完成。 密码存储在单向散列中，保存后无法检索。',
     'view_user'         => '查看用户： :name',
     'usercsv'           => 'CSV 档案',
     'two_factor_admin_optin_help' => '您当前的管理员设置允许使用双重认证。 ',

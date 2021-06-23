@@ -22,10 +22,34 @@
             padding: 3px;
             font-size: 12px;
         }
+
+        .print-logo {
+            max-height: 40px;
+        }
+
     </style>
 </head>
 <body>
-<h3>Assigned to {{ $show_user->present()->fullName() }}</h3>
+
+@if ($snipeSettings->logo_print_assets=='1')
+    @if ($snipeSettings->brand == '3')
+
+        <h2>
+        @if ($snipeSettings->logo!='')
+            <img class="print-logo" src="{{ url('/') }}/uploads/{{ $snipeSettings->logo }}">
+        @endif
+        {{ $snipeSettings->site_name }}
+        </h2>
+    @elseif ($snipeSettings->brand == '2')
+        @if ($snipeSettings->logo!='')
+            <img class="print-logo" src="{{ url('/') }}/uploads/{{ $snipeSettings->logo }}">
+        @endif
+    @else
+      <h2>{{ $snipeSettings->site_name }}</h2>
+    @endif
+@endif
+
+<h2>Assigned to {{ $show_user->present()->fullName() }}</h4>
 
 @if ($assets->count() > 0)
     @php
@@ -34,7 +58,7 @@
     <table class="inventory">
         <thead>
         <tr>
-            <th colspan="7">{{ trans('general.assets') }}</th>
+            <th colspan="8">{{ trans('general.assets') }}</th>
         </tr>
         </thead>
         <thead>
@@ -46,6 +70,7 @@
                 <th style="width: 20%;">Model</th>
                 <th style="width: 20%;">Serial</th>
                 <th style="width: 10%;">Checked Out</th>
+                <th data-formatter="imageFormatter" style="width: 20%;">{{ trans('general.signature') }}</th>
             </tr>
         </thead>
 
@@ -60,7 +85,34 @@
             <td>{{ $asset->serial }}</td>
             <td>
                 {{ $asset->last_checkout }}</td>
+            <td>
+                @if ($asset->assetlog->first())
+                <img height="20%" src="{{ asset('/') }}display-sig/{{ $asset->assetlog->first()->accept_signature }}">
+                @endif
+           </td>
         </tr>
+            @if($settings->show_assigned_assets)
+                @php
+                    $assignedCounter = 1;
+                @endphp
+                @foreach ($asset->assignedAssets as $asset)
+
+                    <tr>
+                        <td>{{ $counter }}.{{ $assignedCounter }}</td>
+                        <td>{{ $asset->asset_tag }}</td>
+                        <td>{{ $asset->name }}</td>
+                        <td>{{ $asset->model->category->name }}</td>
+                        <td>{{ $asset->model->name }}</td>
+                        <td>{{ $asset->serial }}</td>
+                        <td>
+                            {{ $asset->last_checkout }}</td>
+                        <td><img height="20%" src="{{ asset('/') }}display-sig/{{ $asset->assetlog->first()->accept_signature }}"></img></td>
+                    </tr>
+                    @php
+                        $assignedCounter++
+                    @endphp
+                @endforeach
+            @endif
             @php
                 $counter++
             @endphp
@@ -93,7 +145,13 @@
             <tr>
                 <td>{{ $lcounter }}</td>
                 <td>{{ $license->name }}</td>
-                <td>{{ $license->serial }}</td>
+                <td>
+                    @can('viewKeys', $license)
+                        {{ $license->serial }}
+                    @else
+                       <i class="fa-lock" aria-hidden="true"></i> {{ str_repeat('x', 15) }}
+                    @endcan
+                </td>
                 <td>{{  $license->assetlog->first()->created_at }}</td>
             </tr>
             @php
@@ -125,16 +183,17 @@
         @endphp
 
         @foreach ($accessories as $accessory)
-
-            <tr>
-                <td>{{ $acounter }}</td>
-                <td>{{ ($accessory->manufacturer) ? $accessory->manufacturer->name : '' }} {{ $accessory->name }} {{ $accessory->model_number }}</td>
-                <td>{{ $accessory->category->name }}</td>
-                <td>{{  $accessory->assetlog->first()->created_at }}</td>
-            </tr>
-            @php
-                $acounter++
-            @endphp
+            @if ($accessory)
+                <tr>
+                    <td>{{ $acounter }}</td>
+                    <td>{{ ($accessory->manufacturer) ? $accessory->manufacturer->name : '' }} {{ $accessory->name }} {{ $accessory->model_number }}</td>
+                    <td>{{ $accessory->category->name }}</td>
+                    <td>{{  $accessory->assetlog->first()->created_at }}</td>
+                </tr>
+                @php
+                    $acounter++
+                @endphp
+            @endif
         @endforeach
     </table>
 @endif
@@ -160,16 +219,25 @@
         @endphp
 
         @foreach ($consumables as $consumable)
+            @if ($consumable)
+                <tr>
+                    <td>{{ $ccounter }}</td>
 
-            <tr>
-                <td>{{ $ccounter }}</td>
-                <td>{{ ($consumable->manufacturer) ? $consumable->manufacturer->name : '' }}  {{ $consumable->name }} {{ $consumable->model_number }}</td>
-                <td>{{ $consumable->category->name }}</td>
-                <td>{{  $consumable->assetlog->first()->created_at }}</td>
-            </tr>
-            @php
-                $ccounter++
-            @endphp
+
+                <td>
+                    @if ($consumable->deleted_at!='')
+                    <td>{{ ($consumable->manufacturer) ? $consumable->manufacturer->name : '' }}  {{ $consumable->name }} {{ $consumable->model_number }}</td>
+                    @else
+                        {{ ($consumable->manufacturer) ? $consumable->manufacturer->name : '' }}  {{ $consumable->name }} {{ $consumable->model_number }}
+                    @endif
+                </td>
+                    <td>{{ $consumable->category->name }}</td>
+                    <td>{{  $consumable->assetlog->first()->created_at }}</td>
+                </tr>
+                @php
+                    $ccounter++
+                @endphp
+            @endif
         @endforeach
     </table>
 @endif

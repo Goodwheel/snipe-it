@@ -12,5 +12,6 @@ return array(
     'submit'  	                => '送信',
     'upload'                    => 'アップロード',
 	'select_file'				=> 'ファイルを選択...',
-    'select_files'				=> 'Select Files...',
+    'select_files'				=> 'ファイルを選択...',
+    'generate_labels'           => '{1} ラベル生成|[2,*] 複数ラベル生成',
 );

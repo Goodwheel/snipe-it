@@ -12,5 +12,6 @@ return array(
     'submit'  	                => '제출',
     'upload'                    => '올리기',
 	'select_file'				=> '파일 선택...',
-    'select_files'				=> 'Select Files...',
+    'select_files'				=> '파일 선택...',
+    'generate_labels'           => '{1} Generate Label|[2,*] Generate Labels',
 );

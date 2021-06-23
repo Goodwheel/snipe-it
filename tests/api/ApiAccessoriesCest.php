@@ -32,7 +32,7 @@ class ApiAccessoriesCest
         $response = json_decode($I->grabResponse(), true);
         // sample verify
         $accessory = App\Models\Accessory::orderByDesc('created_at')->take(10)->get()->shuffle()->first();
-        $I->seeResponseContainsJson((new AccessoriesTransformer)->transformAccessory($accessory));
+        $I->seeResponseContainsJson($I->removeTimestamps((new AccessoriesTransformer)->transformAccessory($accessory)));
     }
 
     /** @test */
@@ -98,6 +98,7 @@ class ApiAccessoriesCest
             'model_number' => $temp_accessory->model_number,
             'manufacturer_id' => $temp_accessory->manufacturer_id,
             'supplier_id' => $temp_accessory->supplier_id,
+            'image' => $temp_accessory->image,
             'qty' => $temp_accessory->qty,
         ];
 

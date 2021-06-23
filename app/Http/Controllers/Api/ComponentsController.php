@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Http\Transformers\AssetsTransformer;
-use App\Http\Transformers\ComponentsTransformer;
-use App\Http\Transformers\ComponentsAssetsTransformer;
-use App\Models\Component;
-use App\Models\Company;
 use App\Helpers\Helper;
+use App\Http\Controllers\Controller;
+use App\Http\Transformers\ComponentsTransformer;
+use App\Models\Company;
+use App\Models\Component;
+use Illuminate\Http\Request;
 
 class ComponentsController extends Controller
 {
@@ -24,23 +22,31 @@ class ComponentsController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view', Component::class);
-        $components = Company::scopeCompanyables(Component::select('components.*')->whereNull('components.deleted_at')
+        $components = Company::scopeCompanyables(Component::select('components.*')
             ->with('company', 'location', 'category'));
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $components = $components->TextSearch($request->input('search'));
         }
 
-        if ($request->has('company_id')) {
+        if ($request->filled('company_id')) {
             $components->where('company_id','=',$request->input('company_id'));
         }
 
-        if ($request->has('category_id')) {
+        if ($request->filled('category_id')) {
             $components->where('category_id','=',$request->input('category_id'));
         }
 
-        $offset = request('offset', 0);
-        $limit = request('limit', 50);
+        if ($request->filled('location_id')) {
+            $components->where('location_id','=',$request->input('location_id'));
+        }
+
+        // Set the offset to the API call's offset, unless the offset is higher than the actual count of items in which
+        // case we override with the actual count, so we should return 0 items.
+        $offset = (($components) && ($request->get('offset') > $components->count())) ? $components->count() : $request->get('offset', 0);
+
+        // Check to make sure the limit is not higher than the max allowed
+        ((config('app.max_results') >= $request->input('limit')) && ($request->filled('limit'))) ? $limit = $request->input('limit') : $limit = config('app.max_results');
 
         $allowed_columns = ['id','name','min_amt','order_number','serial','purchase_date','purchase_cost','company','category','qty','location','image'];
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
@@ -116,7 +122,7 @@ class ComponentsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Component::class);
+        $this->authorize('update', Component::class);
         $component = Component::findOrFail($id);
         $component->fill($request->all());
 

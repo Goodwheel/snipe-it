@@ -1,34 +1,12 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Helpers\Helper;
-use App\Importer\AccessoryImporter;
-use App\Importer\AssetImporter;
-use App\Importer\ConsumableImporter;
-use App\Importer\Importer;
-use App\Models\Accessory;
-use App\Models\Asset;
-use App\Models\AssetModel;
-use App\Models\Category;
-use App\Models\Company;
-use App\Models\Consumable;
-use App\Models\CustomField;
-use App\Models\Location;
-use App\Models\Manufacturer;
-use App\Models\Setting;
-use App\Models\Statuslabel;
-use App\Models\Supplier;
-use App\Models\User;
-use DB;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
-use League\Csv\Reader;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use ForceUTF8\Encoding;
 
-ini_set('max_execution_time', 600); //600 seconds = 10 minutes
-ini_set('memory_limit', '500M');
+ini_set('max_execution_time', env('IMPORT_TIME_LIMIT', 600)); //600 seconds = 10 minutes
+ini_set('memory_limit', env('IMPORT_MEMORY_LIMIT', '500M'));
 
 /**
  * Class ObjectImportCommand
@@ -65,7 +43,7 @@ class ObjectImportCommand extends Command
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
         $filename = $this->argument('filename');
         $class = title_case($this->option('item-type'));
@@ -74,10 +52,13 @@ class ObjectImportCommand extends Command
         $importer->setCallbacks([$this, 'log'], [$this, 'progress'], [$this, 'errorCallback'])
                  ->setUserId($this->option('user_id'))
                  ->setUpdating($this->option('update'))
+                 ->setShouldNotify($this->option('send-welcome'))
                  ->setUsernameFormat($this->option('username_format'));
 
-        $logFile = $this->option('logfile');
-        \Log::useFiles($logFile);
+
+        // This $logFile/useFiles() bit is currently broken, so commenting it out for now
+        // $logFile = $this->option('logfile');
+        // \Log::useFiles($logFile);
         $this->comment('======= Importing Items from '.$filename.' =========');
         $importer->import();
 
@@ -172,6 +153,7 @@ class ObjectImportCommand extends Command
         array('web-importer', null, InputOption::VALUE_NONE, 'Internal: packages output for use with the web importer'),
         array('user_id', null, InputOption::VALUE_REQUIRED, 'ID of user creating items', 1),
         array('update', null, InputOption::VALUE_NONE, 'If a matching item is found, update item information'),
+        array('send-welcome', null, InputOption::VALUE_NONE, 'Whether to send a welcome email to any new users that are created.'),
         );
 
     }

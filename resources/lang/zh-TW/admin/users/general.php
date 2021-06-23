@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => '該用戶可以登錄',
+    'activated_disabled_help_text' => '您無法編輯自己帳戶的啟動狀態。',
     'assets_user'       => '分配給 :name 的資產',
     'bulk_update_warn'	=> '您正在修改 :user_count 位使用者。請注意！您不能透過此表格修改您自己的資訊，您必須單獨編輯您的個人資訊。',
     'bulk_update_help'	=> '此表格允許您同時修改多位使用者。請僅填寫需要修改的欄位，留空的欄位不會做任何修改。',
@@ -18,6 +19,7 @@ return array(
     'ldap_config_text'  => 'LDAP 設定在 管理 > 設定。所選位置將套用至匯入的使用者。',
     'print_assigned'    => '列印所有分配的',
     'software_user'     => ':name 借出的軟體',
+    'send_email_help'   => 'You must provide an email address for this user to send them credentials. Emailing credentials can only be done on user creation. Passwords are stored in a one-way hash and cannot be retrieved once saved.',
     'view_user'         => '檢視使用者： :name',
     'usercsv'           => 'CSV 檔',
     'two_factor_admin_optin_help' => '您當前的管理員設置允許使用雙因素身份驗證。',

@@ -32,8 +32,9 @@ class ItemImportRequest extends FormRequest
 
     public function import(Import $import)
     {
-        ini_set('max_execution_time', 600); //600 seconds = 10 minutes
-        ini_set('memory_limit', '500M');
+        ini_set('max_execution_time', env('IMPORT_TIME_LIMIT', 600)); //600 seconds = 10 minutes
+        ini_set('memory_limit', env('IMPORT_MEMORY_LIMIT', '500M'));
+        
         $filename = config('app.private_uploads') . '/imports/' . $import->file_path;
         $import->import_type = $this->input('import-type');
         $class = title_case($import->import_type);
@@ -42,7 +43,18 @@ class ItemImportRequest extends FormRequest
         $import->field_map  = request('column-mappings');
         $import->save();
         $fieldMappings=[];
+
         if ($import->field_map) {
+            foreach ($import->field_map as $field => $fieldValue) {
+                $errorMessage = null;
+
+                if(is_null($fieldValue)){
+                    $errorMessage = trans('validation.import_field_empty');
+                    $this->errorCallback($import, $field, $errorMessage);
+                    
+                    return $this->errors;
+                }
+            }
             // We submit as csv field: column, but the importer is happier if we flip it here.
             $fieldMappings = array_change_key_case(array_flip($import->field_map), CASE_LOWER);
                         // dd($fieldMappings);
@@ -50,6 +62,7 @@ class ItemImportRequest extends FormRequest
         $importer->setCallbacks([$this, 'log'], [$this, 'progress'], [$this, 'errorCallback'])
                  ->setUserId(Auth::id())
                  ->setUpdating($this->has('import-update'))
+                 ->setShouldNotify($this->has('send-welcome'))
                  ->setUsernameFormat('firstname.lastname')
                  ->setFieldMappings($fieldMappings);
         // $logFile = storage_path('logs/importer.log');
@@ -60,7 +73,7 @@ class ItemImportRequest extends FormRequest
 
     public function log($string)
     {
-        // \Log::Info($string);
+         \Log::Info($string);
     }
 
     public function progress($count)

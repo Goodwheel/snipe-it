@@ -1,11 +1,10 @@
 <?php
 namespace App\Models;
 
-use App\Models\Requestable;
-use App\Models\SnipeModel;
+use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Watson\Validating\ValidatingTrait;
 
 /**
@@ -25,11 +24,11 @@ class AssetModel extends SnipeModel
 
     // Declare the rules for the model validation
     protected $rules = array(
-        'name'          => 'required|min:1|max:255',
+        'name'              => 'required|min:1|max:255',
         'model_number'      => 'max:255|nullable',
         'category_id'       => 'required|integer|exists:categories,id',
         'manufacturer_id'   => 'required|integer|exists:manufacturers,id',
-        'eol'   => 'integer:min:0|max:240|nullable',
+        'eol'               => 'integer:min:0|max:240|nullable',
     );
 
     /**
@@ -68,45 +67,113 @@ class AssetModel extends SnipeModel
         'user_id',
     ];
 
+    use Searchable;
+    
+    /**
+     * The attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableAttributes = ['name', 'model_number', 'notes', 'eol'];
+
+    /**
+     * The relations and their attributes that should be included when searching the model.
+     * 
+     * @var array
+     */
+    protected $searchableRelations = [
+        'depreciation' => ['name'],
+        'category'     => ['name'],
+        'manufacturer' => ['name'],
+    ];
+
+
+    /**
+     * Establishes the model -> assets relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function assets()
     {
         return $this->hasMany('\App\Models\Asset', 'model_id');
     }
 
+    /**
+     * Establishes the model -> category relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function category()
     {
         return $this->belongsTo('\App\Models\Category', 'category_id');
     }
 
+    /**
+     * Establishes the model -> depreciation relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function depreciation()
     {
         return $this->belongsTo('\App\Models\Depreciation', 'depreciation_id');
     }
 
-    public function adminuser()
-    {
-        return $this->belongsTo('\App\Models\User', 'user_id');
-    }
 
+    /**
+     * Establishes the model -> manufacturer relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function manufacturer()
     {
         return $this->belongsTo('\App\Models\Manufacturer', 'manufacturer_id');
     }
 
+    /**
+     * Establishes the model -> fieldset relationship
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v2.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function fieldset()
     {
         return $this->belongsTo('\App\Models\CustomFieldset', 'fieldset_id');
     }
 
+    /**
+     * Establishes the model -> custom field default values relationship
+     *
+     * @author hannah tinkler
+     * @since [v4.3]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function defaultValues()
     {
         return $this->belongsToMany('\App\Models\CustomField', 'models_custom_fields')->withPivot('default_value');
     }
 
 
+    /**
+     * Gets the full url for the image
+     *
+     * @todo this should probably be moved
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v2.0]
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
+     */
     public function getImageUrl() {
         if ($this->image) {
-            return url('/').'/uploads/models/'.$this->image;
+            return Storage::disk('public')->url(app('models_upload_path').$this->image);
         }
         return false;
     }
@@ -117,17 +184,6 @@ class AssetModel extends SnipeModel
     * -----------------------------------------------
     **/
 
-    /**
-    * Query builder scope for Deleted assets
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-
-    public function scopeDeleted($query)
-    {
-        return $query->whereNotNull('deleted_at');
-    }
 
     /**
      * scopeInCategory
@@ -153,45 +209,14 @@ class AssetModel extends SnipeModel
      * @param       $query
      *
      * @return $query
-     * @author  Daniel Meltzer <parallelgrapefruit@gmail.com
+     * @author  Daniel Meltzer <dmeltzer.devel@gmail.com>
      * @version v3.5
      */
     public function scopeRequestableModels($query)
     {
 
         return $query->where('requestable', '1');
-    }
-
-    /**
-    * Query builder scope to search on text
-    *
-    * @param  Illuminate\Database\Query\Builder  $query  Query builder instance
-    * @param  text                              $search      Search term
-    *
-    * @return Illuminate\Database\Query\Builder          Modified query builder
-    */
-    public function scopeTextSearch($query, $search)
-    {
-
-        return $query->where('models.name', 'LIKE', "%$search%")
-            ->orWhere('model_number', 'LIKE', "%$search%")
-            ->orWhere(function ($query) use ($search) {
-                $query->whereHas('depreciation', function ($query) use ($search) {
-                    $query->where('depreciations.name', 'LIKE', '%'.$search.'%');
-                });
-            })
-            ->orWhere(function ($query) use ($search) {
-                $query->whereHas('category', function ($query) use ($search) {
-                    $query->where('categories.name', 'LIKE', '%'.$search.'%');
-                });
-            })
-            ->orWhere(function ($query) use ($search) {
-                $query->whereHas('manufacturer', function ($query) use ($search) {
-                    $query->where('manufacturers.name', 'LIKE', '%'.$search.'%');
-                });
-            });
-
-    }
+    }  
 
     /**
      * Query builder scope to search on text, including catgeory and manufacturer name

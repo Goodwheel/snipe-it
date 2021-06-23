@@ -1,75 +1,102 @@
-<style>
-tr {
-    padding-left:30px;
-}
-</style>
-
 <template>
-    <tr v-show="processDetail">
-        <td colspan="3">
-            <h4 class="modal-title">Import File:</h4>
-            <div class="dynamic-form-row">
-                <div class="col-md-4 col-xs-12">
-                    <label for="import-type">Import Type:</label>
-                </div>
-                <div class="col-md-4 col-xs-12">
-                    <select2 :options="options.importTypes" v-model="options.importType" required>
-                        <option disabled value="0"></option>
-                    </select2>
-                </div>
-            </div>
-            <div class="dynamic-form-row">
-                <div class="col-md-4 col-xs-12">
-                    <label for="import-update">Update Existing Values?:</label>
-                </div>
-                <div class="col-md-4 col-xs-12">
-                    <input type="checkbox" name="import-update" v-model="options.update">
-                </div>
-            </div>
+  <tr v-show="processDetail">
+    <td colspan="5">
+    <div class="col-md-12">
 
+            <div class="row">
+                <div class="dynamic-form-row">
+                    <div class="col-md-5 col-xs-12">
+                        <label for="import-type">Import Type:</label>
+                    </div>
+
+                    <div class="col-md-7 col-xs-12">
+                        <select2 :options="options.importTypes" v-model="options.importType" required>
+                            <option disabled value="0"></option>
+                        </select2>
+                    </div>
+
+                </div><!-- /dynamic-form-row -->
+                <div class="dynamic-form-row">
+                    <div class="col-md-5 col-xs-12">
+                        <label for="import-update">Update Existing Values?:</label>
+                    </div>
+                    <div class="col-md-7 col-xs-12">
+                        <input type="checkbox" class="iCheck minimal" name="import-update" v-model="options.update">
+                    </div>
+                </div><!-- /dynamic-form-row -->
+
+                <div class="dynamic-form-row">
+                    <div class="col-md-5 col-xs-12">
+                        <label for="send-welcome">Send Welcome Email for new Users?</label>
+                    </div>
+                    <div class="col-md-7 col-xs-12">
+                        <input type="checkbox" class="minimal" name="send-welcome" v-model="options.send_welcome">
+                    </div>
+                </div><!-- /dynamic-form-row -->
+
+                <div class="dynamic-form-row">
+                    <div class="col-md-5 col-xs-12">
+                        <label for="run-backup">Backup before importing?</label>
+                    </div>
+                    <div class="col-md-7 col-xs-12">
+                        <input type="checkbox" class="minimal" name="run-backup" v-model="options.run_backup">
+                    </div>
+                </div><!-- /dynamic-form-row -->
+
+                <div class="alert col-md-8 col-md-offset-2" style="text-align:left"
+                     :class="alertClass"
+                     v-if="statusText">
+                    {{ this.statusText }}
+                </div><!-- /alert -->
+        </div> <!-- /div row -->
+
+        <div class="row">
             <div class="col-md-12" style="padding-top: 30px;">
-            <table class="table">
-            <thead>
-                <th>Header Field</th>
-                <th>Import Field</th>
-                <th>Sample Value</th>
-            </thead>
-            <tbody>
-            <template v-for="(header, index) in file.header_row">
-                <tr>
-                    <td>
-                    <label :for="header" class="controllabel">{{ header }}</label>
-                    </td>
-                    <td>
+                <div class="col-md-4 text-right"><h4>Header Field</h4></div>
+                <div class="col-md-4"><h4>Import Field</h4></div>
+                <div class="col-md-4"><h4>Sample Value</h4></div>
+            </div>
+        </div><!-- /div row -->
+
+        <template v-for="(header, index) in file.header_row">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="col-md-4 text-right">
+                        <label :for="header" class="control-label">{{ header }}</label>
+                    </div>
+                    <div class="col-md-4 form-group">
                         <div required>
                             <select2 :options="columns" v-model="columnMappings[header]">
                                 <option value="0">Do Not Import</option>
                             </select2>
                         </div>
-                    </td>
-                    <td>
-                        <div>{{ activeFile.first_row[index] }}</div>
-                    </td>
-                </tr>
-                </template>
-            </tbody>
-            </table>
-            </div>
-        </td>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="form-control-static">{{ activeFile.first_row[index] }}</p>
+                    </div>
+                </div><!-- /div col-md-8 -->
+            </div><!-- /div row -->
+        </template>
 
-        <td>
-            <button type="button" class="btn btn-sm btn-default" @click="processDetail = false">Cancel</button>
-            <button type="submit" class="btn btn-sm btn-primary" @click="postSave">Import</button>
-            <div 
-                class="alert col-md-5 col-md-offset-1"
-                :class="alertClass"
-                style="text-align:left"
-                v-if="statusText"
-            >
+        <div class="row">
+            <div class="col-md-6 col-md-offset-2 text-right" style="padding-top: 20px;">
+                <button type="button" class="btn btn-sm btn-default" @click="processDetail = false">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary" @click="postSave">Import</button>
+                <br><br>
+            </div>
+        </div><!-- /div row -->
+        <div class="row">
+            <div class="alert col-md-8 col-md-offset-2" style="padding-top: 20px;"
+                 :class="alertClass"
+                 v-if="statusText">
                 {{ this.statusText }}
             </div>
-        </td>
-    </tr>
+        </div><!-- /div row -->
+
+    </div><!-- /div v-show -->
+
+    </td>
+  </tr>
 </template>
 
 <script>
@@ -98,7 +125,6 @@ tr {
                     general: [
                         {id: 'category', text: 'Category' },
                         {id: 'company', text: 'Company' },
-                        {id: 'checkout_to', text: 'Checked out to' },
                         {id: 'email', text: 'Email' },
                         {id: 'item_name', text: 'Item Name' },
                         {id: 'location', text: 'Location' },
@@ -113,18 +139,27 @@ tr {
                         {id: 'serial', text: 'Serial Number' },
                         {id: 'supplier', text: 'Supplier' },
                         {id: 'username', text: 'Username' },
+                        {id: 'department', text: 'Department' },
                     ],
                     assets: [
                         {id: 'asset_tag', text: 'Asset Tag' },
                         {id: 'asset_model', text: 'Model Name' },
+                        {id: 'checkout_class', text: 'Checkout Type' },
+                        {id: 'checkout_location', text: 'Checkout Location' },
                         {id: 'image', text: 'Image Filename' },
                         {id: 'model_number', text: 'Model Number' },
                         {id: 'full_name', text: 'Full Name' },
                         {id: 'status', text: 'Status' },
                         {id: 'warranty_months', text: 'Warranty Months' },
                     ],
+                    consumables: [
+                        {id: 'item_no', text: "Item Number"},
+                        {id: 'model_number', text: "Model Number"},
+                    ],
                     licenses: [
+                        {id: 'asset_tag', text: 'Assigned To Asset'},
                         {id: 'expiration_date', text: 'Expiration Date' },
+                        {id: 'full_name', text: 'Full Name' },
                         {id: 'license_email', text: 'Licensed To Email' },
                         {id: 'license_name', text: 'Licensed To Name' },
                         {id: 'purchase_order', text: 'Purchase Order' },
@@ -137,6 +172,14 @@ tr {
                         {id: 'jobtitle', text: 'Job Title' },
                         {id: 'last_name', text: 'Last Name' },
                         {id: 'phone_number', text: 'Phone Number' },
+                        {id: 'manager_first_name', text: 'Manager First Name' },
+                        {id: 'manager_last_name', text: 'Manager Last Name' },
+                        {id: 'department', text: 'Department' },
+                        {id: 'activated', text: 'Activated' },
+                        {id: 'address', text: 'Address' },
+                        {id: 'city', text: 'City' },
+                        {id: 'state', text: 'State' },
+                        {id: 'country', text: 'Country' },
 
                     ],
                     customFields: this.customFields,
@@ -162,9 +205,14 @@ tr {
                 switch(this.options.importType) {
                     case 'asset':
                         return this.columnOptions.general
-                                .concat(this.columnOptions.assets)
-                                .concat(this.columnOptions.customFields)
-                                .sort(sorter);
+                            .concat(this.columnOptions.assets)
+                            .concat(this.columnOptions.customFields)
+                            .sort(sorter);
+
+                    case 'consumable':
+                        return this.columnOptions.general
+                            .concat(this.columnOptions.consumables)
+                            .sort(sorter);
                     case 'license':
                         return this.columnOptions.general.concat(this.columnOptions.licenses).sort(sorter);
                     case 'user':
@@ -184,7 +232,6 @@ tr {
         },
         watch: {
             columns() {
-                console.log("CHANGED");
                 this.populateSelect2ActiveItems();
             }
         },
@@ -201,7 +248,9 @@ tr {
                 this.statusText = "Processing...";
                 this.$http.post(route('api.imports.importFile', this.file.id), {
                     'import-update': this.options.update,
+                    'send-welcome': this.options.send_welcome,
                     'import-type': this.options.importType,
+                    'run-backup': this.options.run_backup,
                     'column-mappings': this.columnMappings
                 }).then( ({body}) => {
                     // Success
@@ -234,7 +283,6 @@ tr {
                     for(var j=0; j < this.columns.length; j++) {
                         let column = this.columns[j];
                         let lower = this.file.header_row.map((value) => value.toLowerCase());
-                        console.dir(lower);
                         let index = lower.indexOf(column.text.toLowerCase())
                         if(index != -1) {
                             this.$set(this.columnMappings, this.file.header_row[index], column.id)
@@ -248,7 +296,6 @@ tr {
                 }
             },
             updateModel(header, value) {
-                console.log(header, value);
                 this.columnMappings[header] = value;
             }
         },

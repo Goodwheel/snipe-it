@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Helpers\Helper;
-use App\Models\Depreciation;
+use App\Http\Controllers\Controller;
 use App\Http\Transformers\DepreciationsTransformer;
+use App\Models\Depreciation;
+use Illuminate\Http\Request;
 
 class DepreciationsController extends Controller
 {
@@ -20,16 +20,21 @@ class DepreciationsController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view', Depreciation::class);
-        $allowed_columns = ['id','name','created_at'];
+        $allowed_columns = ['id','name','months','created_at'];
 
         $depreciations = Depreciation::select('id','name','months','user_id','created_at','updated_at');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $depreciations = $depreciations->TextSearch($request->input('search'));
         }
 
-        $offset = $request->input('offset', 0);
-        $limit = $request->input('limit', 50);
+        // Set the offset to the API call's offset, unless the offset is higher than the actual count of items in which
+        // case we override with the actual count, so we should return 0 items.
+        $offset = (($depreciations) && ($request->get('offset') > $depreciations->count())) ? $depreciations->count() : $request->get('offset', 0);
+
+        // Check to make sure the limit is not higher than the max allowed
+        ((config('app.max_results') >= $request->input('limit')) && ($request->filled('limit'))) ? $limit = $request->input('limit') : $limit = config('app.max_results');
+
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
         $sort = in_array($request->input('sort'), $allowed_columns) ? $request->input('sort') : 'created_at';
         $depreciations->orderBy($sort, $order);
@@ -88,7 +93,7 @@ class DepreciationsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', Depreciation::class);
+        $this->authorize('update', Depreciation::class);
         $depreciation = Depreciation::findOrFail($id);
         $depreciation->fill($request->all());
 
@@ -110,10 +115,10 @@ class DepreciationsController extends Controller
     public function destroy($id)
     {
         $this->authorize('delete', Depreciation::class);
-        $depreciation = Depreciation::findOrFail($id);
+        $depreciation = Depreciation::withCount('models as models_count')->findOrFail($id);
         $this->authorize('delete', $depreciation);
 
-        if ($depreciation->has_models() > 0) {
+        if ($depreciation->models_count > 0) {
             return response()->json(Helper::formatStandardApiResponse('error', trans('admin/depreciations/message.assoc_users')));
         }
 

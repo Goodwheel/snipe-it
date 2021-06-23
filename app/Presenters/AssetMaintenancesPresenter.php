@@ -1,14 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: parallelgrapefruit
- * Date: 12/23/16
- * Time: 12:15 PM
- */
 
 namespace App\Presenters;
-
-use App\Helpers\Helper;
 
 /**
  * Class AssetModelPresenter
@@ -52,6 +44,14 @@ class AssetMaintenancesPresenter extends Presenter
                 "title" => trans('admin/hardware/table.asset_tag'),
                 "formatter" => "assetTagLinkFormatter"
             ], [
+                "field" => "model",
+                "searchable" => true,
+                "sortable" => true,
+                "switchable" => true,
+                "title" => trans('admin/hardware/form.model'),
+                "visible" => false,
+                "formatter" => "modelsLinkObjFormatter"
+            ],[
                 "field" => "supplier",
                 "searchable" => true,
                 "sortable" => true,
@@ -76,7 +76,7 @@ class AssetMaintenancesPresenter extends Presenter
                 "sortable" => true,
                 "title" => trans('admin/asset_maintenances/form.title'),
             ], [
-                "field" => "created_at",
+                "field" => "start_date",
                 "searchable" => true,
                 "sortable" => true,
                 "title" => trans('admin/asset_maintenances/form.start_date'),

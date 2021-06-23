@@ -2,11 +2,9 @@
 
 namespace App\Importer;
 
-use App\Helpers\Helper;
 use App\Models\Asset;
-use App\Models\Category;
 use App\Models\License;
-use App\Models\Manufacturer;
+use Illuminate\Support\Facades\Auth;
 
 class LicenseImporter extends ItemImporter
 {
@@ -71,16 +69,18 @@ class LicenseImporter extends ItemImporter
 
             // Lets try to checkout seats if the fields exist and we have seats.
             if ($license->seats > 0) {
-                $user = $this->item['user'];
+                $checkout_target = $this->item['checkout_target'];
                 $asset = Asset::where('asset_tag', $asset_tag)->first();
-                $targetLicense = $license->licenseSeats()->first();
-                if ($user) {
-                    $targetLicense->assigned_to = $user->id;
+                $targetLicense = $license->freeSeat();
+                if ($checkout_target) {
+                    $targetLicense->assigned_to = $checkout_target->id;
+                    $targetLicense->user_id = Auth::id();
                     if ($asset) {
                         $targetLicense->asset_id = $asset->id;
                     }
                     $targetLicense->save();
                 } elseif ($asset) {
+                    $targetLicense->user_id = Auth::id();
                     $targetLicense->asset_id = $asset->id;
                     $targetLicense->save();
                 }

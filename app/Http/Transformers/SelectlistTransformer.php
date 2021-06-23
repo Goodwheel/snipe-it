@@ -25,21 +25,15 @@ class SelectlistTransformer
         foreach ($select_items as $select_item) {
             $items_array[]= [
                 'id' => (int) $select_item->id,
-                'text' => ($select_item->use_text) ? e($select_item->use_text) : e($select_item->name),
-                'image' => ($select_item->use_image) ?  e($select_item->use_image) : null,
+                'text' => ($select_item->use_text) ? $select_item->use_text : $select_item->name,
+                'image' => ($select_item->use_image) ?  $select_item->use_image : null,
 
             ];
 
         }
 
-        // This is weird and awful, but the only way I can find to allow the user to
-        // clear the selection - @snipe
-        if (count($items_array) > 0) {
-            array_unshift($items_array, ['id' =>'', 'text'=> trans('general.clear_selection')]);
-        }
-
         $results = [
-            'items' => $items_array,
+            'results' => $items_array,
             'pagination' =>
                 [
                     'more' => ($select_items->currentPage() >= $select_items->lastPage()) ? false : true,

@@ -31,10 +31,10 @@ class ApiManufacturersCest
 
         $response = json_decode($I->grabResponse(), true);
         // sample verify
-        $manufacturer = App\Models\Manufacturer::withCount('assets','accessories','consumables','licenses')
+        $manufacturer = App\Models\Manufacturer::withCount('assets as assets_count','accessories as accessories_count','consumables as consumables_count','licenses as licenses_count')
             ->orderByDesc('created_at')->take(10)->get()->shuffle()->first();
 
-        $I->seeResponseContainsJson((new ManufacturersTransformer)->transformManufacturer($manufacturer));
+        $I->seeResponseContainsJson($I->removeTimestamps((new ManufacturersTransformer)->transformManufacturer($manufacturer)));
     }
 
     /** @test */

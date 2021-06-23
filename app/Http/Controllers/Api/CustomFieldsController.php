@@ -9,7 +9,6 @@ use App\Models\CustomField;
 use App\Models\CustomFieldset;
 use Illuminate\Http\Request;
 use Validator;
-use Illuminate\Validation\Rule;
 
 class CustomFieldsController extends Controller
 {
@@ -24,7 +23,7 @@ class CustomFieldsController extends Controller
 
     public function index()
     {
-        $this->authorize('index', CustomFields::class);
+        $this->authorize('index', CustomField::class);
         $fields = CustomField::get();
         return (new CustomFieldsTransformer)->transformCustomFields($fields, $fields->count());
     }
@@ -38,7 +37,7 @@ class CustomFieldsController extends Controller
     */
     public function show($id)
     {
-      $this->authorize('show', CustomField::class);
+      $this->authorize('view', CustomField::class);
         if ($field = CustomField::find($id)) {
             return (new CustomFieldsTransformer)->transformCustomField($field);
         }
@@ -57,9 +56,15 @@ class CustomFieldsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorize('edit', CustomField::class);
+        $this->authorize('update', CustomField::class);
         $field = CustomField::findOrFail($id);
-        $data = $request->all();
+
+        /**
+         * Updated values for the field,
+         * without the "field_encrypted" flag, preventing the change of encryption status
+         * @var array
+         */
+        $data = $request->except(['field_encrypted']);
 
         $validator = Validator::make($data, $field->validationRules());
         if ($validator->fails()) {
@@ -90,7 +95,14 @@ class CustomFieldsController extends Controller
         $field = new CustomField;
 
         $data = $request->all();
-        $validator = Validator::make($data, $field->validationRules());
+        $regex_format = null;
+        
+        if (str_contains($data["format"], "regex:")){
+            $regex_format = $data["format"];
+        }
+
+        $validator = Validator::make($data, $field->validationRules($regex_format));
+
         if ($validator->fails()) {
             return response()->json(Helper::formatStandardApiResponse('error', null, $validator->errors()));
         }
@@ -106,6 +118,9 @@ class CustomFieldsController extends Controller
     public function postReorder(Request $request, $id)
     {
         $fieldset = CustomFieldset::find($id);
+
+        $this->authorize('update', $fieldset);
+
         $fields = array();
         $order_array = array();
 
@@ -125,7 +140,8 @@ class CustomFieldsController extends Controller
 
     public function associate(Request $request, $field_id)
     {
-        $this->authorize('edit', CustomFieldset::class);
+        $this->authorize('update', CustomFieldset::class);
+
         $field = CustomField::findOrFail($field_id);
 
         $fieldset_id = $request->input('fieldset_id');
@@ -142,7 +158,8 @@ class CustomFieldsController extends Controller
 
     public function disassociate(Request $request, $field_id)
     {
-        $this->authorize('edit', CustomFieldset::class);
+        $this->authorize('update', CustomFieldset::class);
+
         $field = CustomField::findOrFail($field_id);
 
         $fieldset_id = $request->input('fieldset_id');
@@ -166,6 +183,8 @@ class CustomFieldsController extends Controller
     public function destroy($field_id)
     {
         $field = CustomField::findOrFail($field_id);
+
+        $this->authorize('delete', $field);
 
         if ($field->fieldset->count() >0) {
             return response()->json(Helper::formatStandardApiResponse('error', null, 'Field is in use.'));

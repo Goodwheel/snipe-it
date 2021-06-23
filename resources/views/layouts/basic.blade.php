@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
 
@@ -8,12 +8,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ ($snipeSettings) && ($snipeSettings->site_name) ? $snipeSettings->site_name : 'Snipe-IT' }}</title>
 
-
-    <!-- Select2 -->
-    <link rel="stylesheet" href="{{ url(asset('js/plugins/select2/select2.min.css')) }}">
-
+    <link rel="shortcut icon" type="image/ico" href="{{ ($snipeSettings) && ($snipeSettings->favicon!='') ?  Storage::disk('public')->url('').e($snipeSettings->favicon) : 'favicon.ico' }} ">
+    {{-- stylesheets --}}
     <link rel="stylesheet" href="{{ url(mix('css/dist/all.css')) }}">
     <link rel="shortcut icon" type="image/ico" href="{{ url(asset('favicon.ico')) }}">
+
+    <script nonce="{{ csrf_token() }}">
+        window.snipeit = {
+            settings: {
+                "per_page": 50
+            }
+        };
+    </script>
 
 
     @if (($snipeSettings) && ($snipeSettings->header_color))
@@ -33,11 +39,14 @@
         border-color: {{ $snipeSettings->header_color }};
         }
 
-        @if ($snipeSettings->custom_css)
-            {{ $snipeSettings->show_custom_css() }}
-        @endif
-        </style>
 
+        </style>
+    @endif
+
+    @if (($snipeSettings) && ($snipeSettings->custom_css))
+        <style>
+            {!! $snipeSettings->show_custom_css() !!}
+        </style>
     @endif
 
 </head>
@@ -46,7 +55,7 @@
 
     @if (($snipeSettings) && ($snipeSettings->logo!=''))
         <center>
-            <img style="padding-top: 20px; padding-bottom: 10px; max-width: 150px" src="{{ url('/') }}/uploads/{{ $snipeSettings->logo }}">
+            <img id="login-logo" src="{{ Storage::disk('public')->url('').e($snipeSettings->logo) }}">
         </center>
     @endif
   <!-- Content -->
@@ -55,11 +64,16 @@
 
 
     <div class="text-center" style="padding-top: 100px;">
-        @if ($snipeSettings->privacy_policy_link!='')
+        @if (($snipeSettings) && ($snipeSettings->privacy_policy_link!=''))
         <a target="_blank" rel="noopener" href="{{  $snipeSettings->privacy_policy_link }}" target="_new">{{ trans('admin/settings/general.privacy_policy') }}</a>
     @endif
     </div>
 
+    {{-- Javascript files --}}
+    <script src="{{ url(mix('js/dist/all.js')) }}" nonce="{{ csrf_token() }}"></script>
+
+
+    @stack('js')
 </body>
 
 </html>

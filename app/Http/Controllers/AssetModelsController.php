@@ -1,23 +1,15 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\CustomField;
-use Image;
-use Input;
-use Lang;
-use App\Models\AssetModel;
-use Redirect;
-use Auth;
-use DB;
-use Str;
-use Validator;
-use View;
-use App\Models\Asset;
-use App\Models\Company;
-use Config;
 use App\Helpers\Helper;
-use Illuminate\Http\Request;
 use App\Http\Requests\ImageUploadRequest;
+use App\Models\AssetModel;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\View;
+use Redirect;
+use Request;
+use Storage;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -31,13 +23,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class AssetModelsController extends Controller
 {
     /**
-    * Returns a view that invokes the ajax tables which actually contains
-    * the content for the accessories listing, which is generated in getDatatable.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @return View
-    */
+     * Returns a view that invokes the ajax tables which actually contains
+     * the content for the accessories listing, which is generated in getDatatable.
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return View
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function index()
     {
         $this->authorize('index', AssetModel::class);
@@ -45,29 +38,31 @@ class AssetModelsController extends Controller
     }
 
     /**
-    * Returns a view containing the asset model creation form.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @return View
-    */
+     * Returns a view containing the asset model creation form.
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @return View
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function create()
     {
         $this->authorize('create', AssetModel::class);
-        $category_type = 'asset';
-        return view('models/edit')->with('category_type',$category_type)
-        ->with('depreciation_list', Helper::depreciationList())
-        ->with('item', new AssetModel);
+        return view('models/edit')->with('category_type', 'asset')
+            ->with('depreciation_list', Helper::depreciationList())
+            ->with('item', new AssetModel);
     }
 
 
     /**
-    * Validate and process the new Asset Model data.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @return Redirect
-    */
+     * Validate and process the new Asset Model data.
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @param ImageUploadRequest $request
+     * @return Redirect
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function store(ImageUploadRequest $request)
     {
 
@@ -84,29 +79,13 @@ class AssetModelsController extends Controller
         $model->category_id         = $request->input('category_id');
         $model->notes               = $request->input('notes');
         $model->user_id             = Auth::id();
-        $model->requestable         = Input::has('requestable');
+        $model->requestable         = Request::has('requestable');
 
         if ($request->input('custom_fieldset')!='') {
             $model->fieldset_id = e($request->input('custom_fieldset'));
         }
 
-        if (Input::file('image')) {
-
-            $image = Input::file('image');
-            $file_name = str_slug($image->getClientOriginalName()) . "." . $image->getClientOriginalExtension();
-            $path = app('models_upload_path');
-
-            if ($image->getClientOriginalExtension()!='svg') {
-                Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                })->save($path.'/'.$file_name);
-            } else {
-                $image->move($path, $file_name);
-            }
-            $model->image = $file_name;
-
-        }
+        $model = $request->handleImages($model);
 
             // Was it created?
         if ($model->save()) {
@@ -121,53 +100,14 @@ class AssetModelsController extends Controller
     }
 
     /**
-     * Validates and stores new Asset Model data created from the
-     * modal form on the Asset Creation view.
+     * Returns a view containing the asset model edit form.
      *
      * @author [A. Gianotto] [<snipe@snipe.net>]
-     * @since [v2.0]
-     * @param Request $request
-     * @return String JSON
+     * @since [v1.0]
+     * @param int $modelId
+     * @return View
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function apiStore(Request $request)
-    {
-        //COPYPASTA!!!! FIXME
-        $this->authorize('create', AssetModel::class);
-        $model = new AssetModel;
-
-        $settings=Input::all();
-        $settings['eol']= null;
-
-        $model->name=$request->input('name');
-        $model->manufacturer_id = $request->input('manufacturer_id');
-        $model->category_id = $request->input('category_id');
-        $model->model_number = $request->input('model_number');
-        $model->user_id = Auth::id();
-        $model->notes            = $request->input('notes');
-        $model->eol= null;
-
-        if ($request->input('fieldset_id')=='') {
-            $model->fieldset_id = null;
-        } else {
-            $model->fieldset_id = e($request->input('fieldset_id'));
-        }
-
-        if ($model->save()) {
-            return JsonResponse::create($model);
-        } else {
-            return JsonResponse::create(["error" => "Failed validation: ".print_r($model->getErrors()->all('<li>:message</li>'), true)], 500);
-        }
-    }
-
-
-    /**
-    * Returns a view containing the asset model edit form.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @param int $modelId
-    * @return View
-    */
     public function edit($modelId = null)
     {
         $this->authorize('update', AssetModel::class);
@@ -184,14 +124,16 @@ class AssetModelsController extends Controller
 
 
     /**
-    * Validates and processes form data from the edit
-    * Asset Model form based on the model ID passed.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @param int $modelId
-    * @return Redirect
-    */
+     * Validates and processes form data from the edit
+     * Asset Model form based on the model ID passed.
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @param ImageUploadRequest $request
+     * @param int $modelId
+     * @return Redirect
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function update(ImageUploadRequest $request, $modelId = null)
     {
         $this->authorize('update', AssetModel::class);
@@ -201,6 +143,8 @@ class AssetModelsController extends Controller
             return redirect()->route('models.index')->with('error', trans('admin/models/message.does_not_exist'));
         }
 
+        $model = $request->handleImages($model);
+
         $model->depreciation_id     = $request->input('depreciation_id');
         $model->eol                 = $request->input('eol');
         $model->name                = $request->input('name');
@@ -209,6 +153,8 @@ class AssetModelsController extends Controller
         $model->category_id         = $request->input('category_id');
         $model->notes               = $request->input('notes');
         $model->requestable         = $request->input('requestable', '0');
+
+
 
         $this->removeCustomFieldsDefaultValues($model);
 
@@ -222,37 +168,6 @@ class AssetModelsController extends Controller
             }
         }
 
-        $old_image = $model->image;
-
-        // Set the model's image property to null if the image is being deleted
-        if ($request->input('image_delete') == 1) {
-            $model->image = null;
-        }
-
-        if ($request->file('image')) {
-            $image = $request->file('image');
-            $file_name = $model->id.'-'.str_slug($image->getClientOriginalName()) . "." . $image->getClientOriginalExtension();
-
-            if ($image->getClientOriginalExtension()!='svg') {
-                Image::make($image->getRealPath())->resize(500, null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                })->save(app('models_upload_path').$file_name);
-            } else {
-                $image->move(app('models_upload_path'), $file_name);
-            }
-            $model->image = $file_name;
-
-        }
-
-        if ((($request->file('image')) && (isset($old_image)) && ($old_image!='')) || ($request->input('image_delete') == 1)) {
-            try  {
-                unlink(app('models_upload_path').$old_image);
-            } catch (\Exception $e) {
-                \Log::error($e);
-            }
-        }
-
 
         if ($model->save()) {
             return redirect()->route("models.index")->with('success', trans('admin/models/message.update.success'));
@@ -261,14 +176,15 @@ class AssetModelsController extends Controller
     }
 
     /**
-    * Validate and delete the given Asset Model. An Asset Model
-    * cannot be deleted if there are associated assets.
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @param int $modelId
-    * @return Redirect
-    */
+     * Validate and delete the given Asset Model. An Asset Model
+     * cannot be deleted if there are associated assets.
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @param int $modelId
+     * @return Redirect
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function destroy($modelId)
     {
         $this->authorize('delete', AssetModel::class);
@@ -284,9 +200,9 @@ class AssetModelsController extends Controller
 
         if ($model->image) {
             try  {
-                unlink(public_path().'/uploads/models/'.$model->image);
+                Storage::disk('public')->delete('models/'.$model->image);
             } catch (\Exception $e) {
-                \Log::error($e);
+                \Log::info($e);
             }
         }
 
@@ -299,13 +215,14 @@ class AssetModelsController extends Controller
 
 
     /**
-    * Restore a given Asset Model (mark as un-deleted)
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @param int $modelId
-    * @return Redirect
-    */
+     * Restore a given Asset Model (mark as un-deleted)
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @param int $modelId
+     * @return Redirect
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function getRestore($modelId = null)
     {
         $this->authorize('create', AssetModel::class);
@@ -313,16 +230,8 @@ class AssetModelsController extends Controller
         $model = AssetModel::withTrashed()->find($modelId);
 
         if (isset($model->id)) {
-
-            // Restore the model
             $model->restore();
-
-            // Prepare the success message
-            $success = trans('admin/models/message.restore.success');
-
-            // Redirect back
-            return redirect()->route('models.index')->with('success', $success);
-
+            return redirect()->route('models.index')->with('success', trans('admin/models/message.restore.success'));
         }
         return redirect()->back()->with('error', trans('admin/models/message.not_found'));
 
@@ -330,13 +239,14 @@ class AssetModelsController extends Controller
 
 
     /**
-    * Get the model information to present to the model view page
-    *
-    * @author [A. Gianotto] [<snipe@snipe.net>]
-    * @since [v1.0]
-    * @param int $modelId
-    * @return View
-    */
+     * Get the model information to present to the model view page
+     *
+     * @author [A. Gianotto] [<snipe@snipe.net>]
+     * @since [v1.0]
+     * @param int $modelId
+     * @return View
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function show($modelId = null)
     {
         $this->authorize('view', AssetModel::class);
@@ -345,11 +255,8 @@ class AssetModelsController extends Controller
         if (isset($model->id)) {
             return view('models/view', compact('model'));
         }
-        // Prepare the error message
-        $error = trans('admin/models/message.does_not_exist', compact('id'));
 
-        // Redirect to the user management page
-        return redirect()->route('models.index')->with('error', $error);
+        return redirect()->route('models.index')->with('error', trans('admin/models/message.does_not_exist'));
     }
 
     /**
@@ -371,14 +278,10 @@ class AssetModelsController extends Controller
         $model->id = null;
 
         // Show the page
-        $view = View::make('models/edit');
-        $view->with('category_list', Helper::categoryList('asset'));
-        $view->with('depreciation_list', Helper::depreciationList());
-        $view->with('manufacturer_list', Helper::manufacturerList());
-        $view->with('item', $model);
-        $view->with('clone_model', $model_to_clone);
-        return $view;
-
+        return view('models/edit')
+            ->with('depreciation_list', Helper::depreciationList())
+            ->with('item', $model)
+            ->with('clone_model', $model_to_clone);
     }
 
 
@@ -392,8 +295,7 @@ class AssetModelsController extends Controller
     */
     public function getCustomFields($modelId)
     {
-        $model = AssetModel::find($modelId);
-        return view("models.custom_fields_form")->with("model", $model);
+        return view("models.custom_fields_form")->with("model", AssetModel::find($modelId));
     }
 
 
@@ -408,14 +310,14 @@ class AssetModelsController extends Controller
      */
     public function postBulkEdit(Request $request)
     {
-        
-        $models_raw_array = Input::get('ids');
+
+        $models_raw_array = $request->input('ids');
 
         // Make sure some IDs have been selected
         if ((is_array($models_raw_array)) && (count($models_raw_array) > 0)) {
 
 
-            $models = AssetModel::whereIn('id', $models_raw_array)->withCount('assets')->orderBy('assets_count', 'ASC')->get();
+            $models = AssetModel::whereIn('id', $models_raw_array)->withCount('assets as assets_count')->orderBy('assets_count', 'ASC')->get();
 
             // If deleting....
             if ($request->input('bulk_actions')=='delete') {
@@ -433,13 +335,8 @@ class AssetModelsController extends Controller
                 $nochange = ['NC' => 'No Change'];
                 $fieldset_list = $nochange + Helper::customFieldsetList();
                 $depreciation_list = $nochange + Helper::depreciationList();
-                $category_list = $nochange + Helper::categoryList('asset');
-                $manufacturer_list = $nochange + Helper::manufacturerList();
-
 
                 return view('models/bulk-edit', compact('models'))
-                    ->with('manufacturer_list', $manufacturer_list)
-                    ->with('category_list', $category_list)
                     ->with('fieldset_list', $fieldset_list)
                     ->with('depreciation_list', $depreciation_list);
             }
@@ -463,14 +360,14 @@ class AssetModelsController extends Controller
     public function postBulkEditSave(Request $request)
     {
 
-        $models_raw_array = Input::get('ids');
+        $models_raw_array = $request->input('ids');
         $update_array = array();
 
 
-        if (($request->has('manufacturer_id') && ($request->input('manufacturer_id')!='NC'))) {
+        if (($request->filled('manufacturer_id') && ($request->input('manufacturer_id')!='NC'))) {
             $update_array['manufacturer_id'] = $request->input('manufacturer_id');
         }
-        if (($request->has('category_id') && ($request->input('category_id')!='NC'))) {
+        if (($request->filled('category_id') && ($request->input('category_id')!='NC'))) {
             $update_array['category_id'] = $request->input('category_id');
         }
         if ($request->input('fieldset_id')!='NC') {
@@ -504,11 +401,11 @@ class AssetModelsController extends Controller
      */
     public function postBulkDelete(Request $request)
     {
-        $models_raw_array = Input::get('ids');
+        $models_raw_array = $request->input('ids');
 
         if ((is_array($models_raw_array)) && (count($models_raw_array) > 0)) {
 
-            $models = AssetModel::whereIn('id', $models_raw_array)->withCount('assets')->get();
+            $models = AssetModel::whereIn('id', $models_raw_array)->withCount('assets as assets_count')->get();
 
             $del_error_count = 0;
             $del_count = 0;

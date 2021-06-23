@@ -1,15 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: parallelgrapefruit
- * Date: 12/23/16
- * Time: 11:51 AM
- */
-
 namespace App\Presenters;
-
-use App\Helpers\Helper;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Class AccessoryPresenter

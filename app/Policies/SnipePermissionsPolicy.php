@@ -53,7 +53,7 @@ abstract class SnipePermissionsPolicy
     /**
      * Determine whether the user can view the accessory.
      *
-     * @param  \App\User  $user
+     * @param  \App\Models\User  $user
      * @return mixed
      */
     public function view(User $user, $item = null)
@@ -64,7 +64,7 @@ abstract class SnipePermissionsPolicy
     /**
      * Determine whether the user can create accessories.
      *
-     * @param  \App\User  $user
+     * @param  \App\Models\User  $user
      * @return mixed
      */
     public function create(User $user)
@@ -75,7 +75,7 @@ abstract class SnipePermissionsPolicy
     /**
      * Determine whether the user can update the accessory.
      *
-     * @param  \App\User  $user
+     * @param  \App\Models\User  $user
      * @return mixed
      */
     public function update(User $user, $item = null)
@@ -86,22 +86,28 @@ abstract class SnipePermissionsPolicy
     /**
      * Determine whether the user can delete the accessory.
      *
-     * @param  \App\User  $user
+     * @param  \App\Models\User  $user
      * @return mixed
      */
     public function delete(User $user, $item = null)
     {
-        return $user->hasAccess($this->columnName().'.delete');
+        $itemConditional = true;
+        if ($item) {
+            $itemConditional =  empty($item->deleted_at);
+        }
+        return $itemConditional && $user->hasAccess($this->columnName().'.delete');
     }
 
      /**
      * Determine whether the user can manage the accessory.
      *
-     * @param  \App\User  $user
+     * @param  \App\Models\User  $user
      * @return mixed
      */
     public function manage(User $user, $item = null)
     {
         return $user->hasAccess($this->columnName().'.edit');
     }
+
+
 }

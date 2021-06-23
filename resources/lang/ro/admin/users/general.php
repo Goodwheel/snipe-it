@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Activul desemnat catre :name',
     'bulk_update_warn'	=> 'Sunteți pe punctul de a edita proprietățile utilizatorilor: user_count. Rețineți că nu puteți modifica propriile atribute ale utilizatorilor utilizând acest formular și trebuie să efectuați modificări individuale ale propriului dvs. utilizator.',
     'bulk_update_help'	=> 'Acest formular vă permite să actualizați simultan mai mulți utilizatori. Completați câmpurile pe care trebuie să le schimbați. Toate câmpurile rămase necompletate vor rămâne neschimbate.',
@@ -18,6 +19,7 @@ return array(
     'ldap_config_text'  => 'Setările de configurare LDAP pot fi găsite pe Administrator> Setări. Locația selectată (opțional) va fi setată pentru toți utilizatorii importați.',
     'print_assigned'    => 'Print All Assigned',
     'software_user'     => 'Software predat catre :name',
+    'send_email_help'   => 'You must provide an email address for this user to send them credentials. Emailing credentials can only be done on user creation. Passwords are stored in a one-way hash and cannot be retrieved once saved.',
     'view_user'         => 'Vezi utilizator :name',
     'usercsv'           => 'Fișier CSV',
     'two_factor_admin_optin_help' => 'Setările dvs. actuale de administrare permit executarea selectivă a autentificării cu două factori.',

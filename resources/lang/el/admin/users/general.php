@@ -2,7 +2,8 @@
 
 
 return array(
-
+    'activated_help_text' => 'This user can login',
+    'activated_disabled_help_text' => 'You cannot edit activation status for your own account.',
     'assets_user'       => 'Περιουσιακά στοιχεία που έχει αντιστοιχιστεί σε: όνομα',
     'bulk_update_warn'	=> 'Πρόκειται να επεξεργαστείτε τις ιδιότητες των χρηστών: user_count. Λάβετε υπόψη ότι δεν μπορείτε να αλλάξετε τα δικά σας χαρακτηριστικά χρήστη χρησιμοποιώντας αυτήν τη φόρμα και πρέπει να κάνετε αλλαγές στον δικό σας χρήστη ξεχωριστά.',
     'bulk_update_help'	=> 'Αυτή η φόρμα σας επιτρέπει να ενημερώσετε ταυτόχρονα πολλούς χρήστες. Συμπληρώστε μόνο τα πεδία που πρέπει να αλλάξετε. Τα τυχόν κενά πεδία παραμένουν αμετάβλητα.',
@@ -18,6 +19,7 @@ return array(
     'ldap_config_text'  => 'Οι ρυθμίσεις διαμόρφωσης LDAP μπορούν να βρεθούν στο στοιχείο Διαχειριστής> Ρυθμίσεις. Η (επιλεγμένη) επιλεγμένη τοποθεσία θα οριστεί για όλους τους εισαγόμενους χρήστες.',
     'print_assigned'    => 'Print All Assigned',
     'software_user'     => 'Λογισμικό Έγινε έλεγχος σε: όνομα',
+    'send_email_help'   => 'You must provide an email address for this user to send them credentials. Emailing credentials can only be done on user creation. Passwords are stored in a one-way hash and cannot be retrieved once saved.',
     'view_user'         => 'Προβολή χρήστη :ονόματος',
     'usercsv'           => 'CSV αρχείο',
     'two_factor_admin_optin_help' => 'Οι τρέχουσες ρυθμίσεις διαχειριστή επιτρέπουν την επιλεκτική εφαρμογή ελέγχου ταυτότητας δύο παραγόντων.',

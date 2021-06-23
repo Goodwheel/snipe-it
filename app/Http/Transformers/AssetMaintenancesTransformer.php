@@ -1,10 +1,11 @@
 <?php
 namespace App\Http\Transformers;
 
+use App\Helpers\Helper;
 use App\Models\AssetMaintenance;
 use Gate;
 use Illuminate\Database\Eloquent\Collection;
-use App\Helpers\Helper;
+use App\Models\Asset;
 
 class AssetMaintenancesTransformer
 {
@@ -28,6 +29,15 @@ class AssetMaintenancesTransformer
                 'asset_tag'=> e($assetmaintenance->asset->asset_tag)
 
             ]  : null,
+            'model' => (($assetmaintenance->asset) && ($assetmaintenance->asset->model)) ? [
+                'id' => (int) $assetmaintenance->asset->model->id,
+                'name'=> ($assetmaintenance->asset->model->name) ? e($assetmaintenance->asset->model->name).' '.e($assetmaintenance->asset->model->model_number)  : null
+            ]  : null,
+            'company' => (($assetmaintenance->asset) && ($assetmaintenance->asset->company)) ? [
+                'id' => (int) $assetmaintenance->asset->company->id,
+                'name'=> ($assetmaintenance->asset->company->name) ? e($assetmaintenance->asset->company->name) : null,
+
+            ]  : null,
             'title'         => ($assetmaintenance->title) ? e($assetmaintenance->title) : null,
             'location' => (($assetmaintenance->asset) && ($assetmaintenance->asset->location)) ? [
                 'id' => (int) $assetmaintenance->asset->location->id,
@@ -38,9 +48,9 @@ class AssetMaintenancesTransformer
             'supplier'      => ($assetmaintenance->supplier) ? ['id' => $assetmaintenance->supplier->id,'name'=> e($assetmaintenance->supplier->name)] : null,
             'cost'          => Helper::formatCurrencyOutput($assetmaintenance->cost),
             'asset_maintenance_type'          => e($assetmaintenance->asset_maintenance_type),
-            'start_date'         => Helper::getFormattedDateObject($assetmaintenance->start_date, 'datetime'),
+            'start_date'         => Helper::getFormattedDateObject($assetmaintenance->start_date, 'date'),
             'asset_maintenance_time'          => $assetmaintenance->asset_maintenance_time,
-            'completion_date'     => Helper::getFormattedDateObject($assetmaintenance->completion_date, 'datetime'),
+            'completion_date'     => Helper::getFormattedDateObject($assetmaintenance->completion_date, 'date'),
             'user_id'    => ($assetmaintenance->admin) ? ['id' => $assetmaintenance->admin->id,'name'=> e($assetmaintenance->admin->getFullNameAttribute())] : null,
             'created_at' => Helper::getFormattedDateObject($assetmaintenance->created_at, 'datetime'),
             'updated_at' => Helper::getFormattedDateObject($assetmaintenance->updated_at, 'datetime'),
@@ -48,8 +58,8 @@ class AssetMaintenancesTransformer
         ];
 
         $permissions_array['available_actions'] = [
-            'update' => (bool) Gate::allows('update', Asset::class),
-            'delete' => (bool) Gate::allows('delete', Asset::class),
+            'update' => Gate::allows('update', Asset::class),
+            'delete' => Gate::allows('delete', Asset::class),
         ];
 
         $array += $permissions_array;

@@ -2,10 +2,7 @@
 
 namespace App\Importer;
 
-use App\Helpers\Helper;
 use App\Models\Asset;
-use App\Models\Category;
-use App\Models\Manufacturer;
 use App\Models\Statuslabel;
 
 class AssetImporter extends ItemImporter
@@ -27,9 +24,17 @@ class AssetImporter extends ItemImporter
 
             foreach ($this->customFields as $customField) {
                 $customFieldValue = $this->array_smart_custom_field_fetch($row, $customField);
+
                 if ($customFieldValue) {
-                    $this->item['custom_fields'][$customField->db_column_name()] = $customFieldValue;
-                    $this->log('Custom Field '. $customField->name.': '.$customFieldValue);
+
+                    if ($customField->field_encrypted == 1) {
+                        $this->item['custom_fields'][$customField->db_column_name()] = \Crypt::encrypt($customFieldValue);
+                        $this->log('Custom Field '. $customField->name.': '.\Crypt::encrypt($customFieldValue));
+                    } else {
+                        $this->item['custom_fields'][$customField->db_column_name()] = $customFieldValue;
+                        $this->log('Custom Field '. $customField->name.': '.$customFieldValue);
+                    }
+
                 } else {
                     // Clear out previous data.
                     $this->item['custom_fields'][$customField->db_column_name()] = null;
@@ -68,6 +73,8 @@ class AssetImporter extends ItemImporter
         }
 
         $this->item['image'] = $this->findCsvMatch($row, "image");
+        $this->item['requestable'] = $this->fetchHumanBoolean($this->findCsvMatch($row, "requestable"));;
+        $asset->requestable =  $this->fetchHumanBoolean($this->findCsvMatch($row, "requestable"));
         $this->item['warranty_months'] = intval($this->findCsvMatch($row, "warranty_months"));
         $this->item['model_id'] = $this->createOrFetchAssetModel($row);
 
@@ -81,8 +88,8 @@ class AssetImporter extends ItemImporter
 
         // We need to save the user if it exists so that we can checkout to user later.
         // Sanitizing the item will remove it.
-        if(array_key_exists('user', $this->item)) {
-            $user = $this->item['user'];
+        if(array_key_exists('checkout_target', $this->item)) {
+            $target = $this->item['checkout_target'];
         }
         $item = $this->sanitizeItemForStoring($asset, $editingAsset);
         // The location id fetched by the csv reader is actually the rtd_location_id.
@@ -112,9 +119,11 @@ class AssetImporter extends ItemImporter
             $asset->logCreate('Imported using csv importer');
             $this->log('Asset ' . $this->item["name"] . ' with serial number ' . $this->item['serial'] . ' was created');
 
-            // If we have a user to checkout to, lets do so.
-            if(isset($user)) {
-                $asset->fresh()->checkOut($user);
+            // If we have a target to checkout to, lets do so.
+            //-- user_id is a property of the abstract class Importer, which this class inherits from and it's setted by
+            //-- the class that needs to use it (command importer or GUI importer inside the project).
+            if(isset($target)) {
+                $asset->fresh()->checkOut($target, $this->user_id);
             }
             return;
         }

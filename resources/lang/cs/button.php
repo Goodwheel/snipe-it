@@ -12,5 +12,6 @@ return array(
     'submit'  	                => 'Odeslat',
     'upload'                    => 'Nahrát',
 	'select_file'				=> 'Vybrat soubor...',
-    'select_files'				=> 'Select Files...',
+    'select_files'				=> 'Vybrat soubory…',
+    'generate_labels'           => '{1} Generate Label|[2,*] Generate Labels',
 );
